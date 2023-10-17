@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="proto\AllMessages.proto" />
+    <None Remove="proto\CommonMessages_External.proto" />
+    <None Remove="proto\CommonModelMessages_External.proto" />
+    <None Remove="proto\CSMessages_External.proto" />
+    <None Remove="proto\CSModelMessages_External.proto" />
+  </ItemGroup>
+ 
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.20.1" />
+    <PackageReference Include="Grpc.Tools" Version="2.58.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="protobuf-net" Version="3.2.26" />
+    <PackageReference Include="System.Reactive" Version="6.0.0" />
+  </ItemGroup>
+ 
+  <ItemGroup>
+    <Protobuf Include="proto\AllMessages.proto" GrpcServices="Client" />
+  </ItemGroup>
+
+</Project>

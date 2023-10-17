@@ -1,0 +1,40 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_generate_equals_and_hash = true;
+option java_package = "com.xtrader.protocol.proto.commons";
+option java_outer_classname = "ContainerCommonMessages";
+
+import "CommonModelMessages_External.proto";
+
+// Message type
+message ProtoMessage {
+    required uint32 payloadType = 1; // Type of payload
+    optional bytes payload = 2; // Payload
+    optional string clientMsgId = 3; // Client message id, use this for matching the response with the initial request
+}
+
+// Error response message
+message ProtoErrorRes {
+    optional ProtoPayloadType payloadType = 1 [default = ERROR_RES]; // Type of payload
+    required string errorCode = 2; // Error code
+    optional string description = 3; // Error description
+    optional uint64 maintenanceEndTimestamp = 4; // UNIX timestamp in milliseconds. If server is under maintenance, this field indicates the estimated time when the server will be operational again
+}
+
+// Heartbeat used for keeping connection alive
+message ProtoHeartbeatEvent {
+    optional ProtoPayloadType payloadType = 1 [default = HEARTBEAT_EVENT]; // Type of payload
+}
+
+// Message used for sending a ping request to the server
+message ProtoPingReq {
+    optional ProtoPayloadType payloadType = 1 [default = PING_REQ];
+    required uint64 timestamp = 2; // UNIX timestamp in milliseconds, you will receive a response with the same timestamp
+}
+
+// Response to a ProtoPingReq message
+message ProtoPingRes {
+    optional ProtoPayloadType payloadType = 1 [default = PING_RES];
+    required uint64 timestamp = 2; // UNIX timestamp in milliseconds, this is the timestamp of the request
+}

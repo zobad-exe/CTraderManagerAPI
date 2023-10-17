@@ -1,0 +1,1853 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+
+option java_generate_equals_and_hash = true;
+
+option java_package = "com.xtrader.managerapi";
+
+option java_outer_classname = "CSContainerMessages";
+
+import "CSModelMessages_External.proto";
+
+
+// Hello event is sent as the first message after connection
+message ProtoHelloEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_HELLO_EVENT];
+}
+
+// Request for authentication of Manager
+message ProtoManagerAuthReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_AUTH_REQ];
+    required string plantId = 2; // Identifier of the specific cServer instance
+    required string environmentName = 3; // Identifier of the environment
+    required int64 login = 4; // Login of the Manager
+    required string passwordHash = 5; // MD5-hash of Manager's password
+}
+
+// Response for ProtoManagerAuthReq
+message ProtoManagerAuthRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_AUTH_RES];
+    repeated ProtoManagerPermission permission = 2; // Permissions of the Manager
+}
+
+// Request to receive a manager token for authentication in cID via ProtoCHManagerTokenAuthReq
+message ProtoManagerGetAuthTokenReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_GET_AUTH_TOKEN_REQ];
+}
+
+// Response to ProtoManagerGetAuthTokenReq
+message ProtoManagerGetAuthTokenRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_GET_AUTH_TOKEN_RES];
+    required string token = 2; // The manager's token that can be used for authorization in cID via ProtoCHManagerTokenAuthReq
+}
+
+// Request for changing of Trader Account's ("Trader" for short) password
+message ProtoChangeTraderPasswordReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHANGE_TRADER_PASSWORD_REQ];
+    required int64 traderId = 2; // Unique identifier of the Trader's within environment
+    required string passwordHash = 3; // MD5-hash of Trader's password
+}
+
+// Response for ProtoChangeTraderPasswordReq
+message ProtoChangeTraderPasswordRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHANGE_TRADER_PASSWORD_RES];
+    required int64 traderId = 2; // Unique identifier of the Trader's within environment
+}
+
+// Request for checking of Trader's password using either traderId or login
+message ProtoCheckTraderPasswordReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHECK_TRADER_PASSWORD_REQ];
+    optional int64 traderId = 2; // Unique identifier of the Trader's within environment
+    required string passwordHash = 3; // MD5-hash Trader's password
+    optional int64 login = 4; // Login of the Trader
+}
+
+// Response for ProtoCheckTraderPasswordReq
+message ProtoCheckTraderPasswordRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHECK_TRADER_PASSWORD_RES];
+    required int64 traderId = 2; // Unique identifier of the Trader's within environment
+}
+
+// Request for changing of Manager's password
+message ProtoChangeManagerPasswordReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHANGE_MANAGER_PASSWORD_REQ];
+    required int64 managerId = 2; // ID of the Manager
+    required string passwordHash = 3; // MD5-hash of Manager's password
+}
+
+// Response for ProtoChangeManagerPasswordReq
+message ProtoChangeManagerPasswordRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHANGE_MANAGER_PASSWORD_RES];
+    required int64 managerId = 2; // ID of the Manager
+}
+
+// Request for checking of Manager's password
+message ProtoCheckManagerPasswordReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHECK_MANAGER_PASSWORD_REQ];
+    optional int64 managerId = 2; // ID of the Manager
+    optional string passwordHash = 3; // MD5-hash of Manager's password
+}
+
+// Response for ProtoCheckManagerPasswordReq
+message ProtoCheckManagerPasswordRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHECK_MANAGER_PASSWORD_RES];
+    optional int64 managerId = 2; // ID of the Manager
+}
+
+// Event that is sent following the successful Order acceptance or execution by the cServer
+// Acts as response to the ProtoNewOrderReq, ProtoCancelOrderReq, ProtoAmendOrderReq,
+// ProtoAmendPositionSLTPReq, ProtoClosePositionReq requests. Also, the event is sent when a Deposit/Withdrawal took place
+message ProtoExecutionEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_EXECUTION_EVENT];
+    required ProtoExecutionType executionType = 2; // Type of the happened event
+    optional ProtoPosition position = 4; // Reference to the Position linked with the execution
+    optional ProtoOrder order = 5; // Reference to the Order linked with the execution
+    optional string errorCode = 6; // The name of the ProtoErrorCode or the other custom ErrorCodes in case of unsuccessful operation
+    optional ProtoDepositWithdraw depositWithdraw = 7; // Reference to the Deposit or Withdrawal operation linked with the execution
+    optional ProtoDeal deal = 8; // Reference to the Deal linked with the execution
+    optional uint64 eventId = 9; // ID of the execution event
+    optional ProtoBonusDepositWithdraw bonusDepositWithdraw = 10; // Reference to the Bonus Deposit or Bonus Withdrawal operation linked with the execution
+    optional bool isServerEvent = 11; // If TRUE then the event generated by the cServer logic instead of the Trader's request. (e.g. Stop Out)
+    optional double depositToUsdRate = 12; // Conversion rate from the deposit currency to USD
+    optional bool notifyBigVolume = 13; // Returned as TRUE if executed volume is big enough as per Trade Notification Profile
+}
+
+// Event that is sent when the margin allocated to a specific Position is changed
+message ProtoMarginChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_POSITION_MARGIN_CHANGED_EVENT];
+    required uint64 positionId = 2; // The unique ID of the Position
+    required uint64 usedMargin = 3; // The new value of the margin used
+    optional uint32 moneyDigits = 4; // Specifies the exponent of the monetary values. E.g. moneyDigits = 8 must be interpret as business value multiplied by 10^8, then real value would be 10053099944 / 10^8 = 100.53099944. Affects usedMargin
+}
+
+// Request to get current UNIX-timestamp of the cServer
+message ProtoServerTimeReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SERVER_TIME_REQ];
+}
+
+// Response to ProtoServerTimeReq
+message ProtoServerTimeRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SERVER_TIME_RES];
+    required int64 timeInMillis = 2; // Server time in milliseconds (UNIX-timestamp)
+}
+
+// Request to get information about Order and related Deals
+message ProtoOrderDetailsReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ORDER_DETAILS_REQ];
+    required int64 orderId = 2; // The unique ID of the Order
+}
+
+// Response for ProtoOrderDetailsReq
+message ProtoOrderDetailsRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ORDER_DETAILS_RES];
+    required ProtoOrder orderSnapshot = 2; // Order details
+    repeated ProtoDeal deal = 3; // The list of Deals related to the Order
+    repeated ProtoOrderAction action = 4; // Refers to the action related to Order (e.g. create, amend, cancel etc)
+}
+
+// Request for recalculation of Trader's margin
+message ProtoRecalculateAccountMarginReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_RECALCULATE_ACCOUNT_MARGIN_REQ];
+    required int64 traderID = 2; // Unique identifier of the Trader's within environment
+    optional uint32 leverageInCents = 4; // Account leverage (e.g. if leverage = 1:50 then value = 5000)
+}
+
+// Response for ProtoRecalculateAccountMarginReq
+message ProtoRecalculateAccountMarginRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_RECALCULATE_ACCOUNT_MARGIN_RES];
+}
+
+// Request for recalculation of margin for the changed Symbol margin settings
+message ProtoRecalculateSymbolMarginReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_RECALCULATE_SYMBOL_MARGIN_REQ];
+    required int64 groupId = 2; // The unique identifier of the group in specific server environment within cTrader platform
+    required int64 symbolId = 3; // The unique identifier of the Symbol in specific server environment within cTrader platform
+    required int64 leverageId = 5; // The unique identifier of Dynamic Leverage entity. https://help.ctrader.com/ctrader/trading/dynamic-leverage
+}
+
+// Response for ProtoRecalculateSymbolMarginReq
+message ProtoRecalculateSymbolMarginRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_RECALCULATE_SYMBOL_MARGIN_RES];
+}
+
+// Request for recalculating margin for Positions on changing Dynamic Leverage (https://help.ctrader.com/trading-with-ctrader/dynamic-leverage)
+message ProtoRecalculateDynamicLeverageMarginReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_RECALCULATE_DYNAMIC_LEVERAGE_REQ];
+    required int64 leverageId = 2; // The unique identifier of Dynamic Leverage entity. https://help.ctrader.com/ctrader/trading/dynamic-leverage
+}
+
+// Response for ProtoRecalculateDynamicLeverageMarginReq
+message ProtoRecalculateDynamicLeverageMarginRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_RECALCULATE_DYNAMIC_LEVERAGE_RES];
+}
+
+// Request to get list of Trader Groups (with limited set of Trader Group fields). Trader Groups are used to manage common Trader settings and Manager permission. Each Trader belongs to one Trader Group
+message ProtoLightGroupListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIGHT_GROUP_LIST_REQ];
+}
+
+// Response for ProtoLightGroupListReq
+message ProtoLightGroupListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIGHT_GROUP_LIST_RES];
+    repeated ProtoLightGroup lightGroup = 2; // Group entities with limited number of fields
+}
+
+// Request for list of non-deleted Traders filtered by registrationTimestamp and sorted descending (latest created Trader goes first)
+message ProtoTraderListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRADER_LIST_REQ];
+    required int64 fromTimestamp = 2; // UNIX timestamp in milliseconds from which the search starts
+    required int64 toTimestamp = 3; // UNIX timestamp in milliseconds where to stop searching
+    optional int64 groupId = 4; // The unique identifier of Group entity
+    optional bool hideIbParameters = 5; // If TRUE then Introducing Broker parameters of the Trader are not returned
+    optional bool onlySubAccounts = 6; // If TRUE then only Subaccounts (Trader used for strategy copying) are returned
+}
+
+// Response for ProtoTraderListReq
+message ProtoTraderListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRADER_LIST_RES];
+    repeated ProtoTrader trader = 2; // Trader entities
+    required bool hasMore = 3; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to get list of Symbols
+message ProtoManagerSymbolListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_SYMBOL_LIST_REQ];
+}
+
+// Response for ProtoManagerSymbolListReq
+message ProtoManagerSymbolListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_SYMBOL_LIST_RES];
+    repeated ProtoManagerSymbol symbol = 2; // Symbol entities
+    repeated ProtoArchivedSymbol archivedSymbol = 3; // Archived Symbol entities
+}
+
+// Request to get list of Managers
+message ProtoManagerListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_LIST_REQ];
+}
+
+// Response for ProtoManagerListReq
+message ProtoManagerListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_LIST_RES];
+    repeated ProtoManager manager = 2; // Manager entities
+}
+
+// Request to get list of open Positions, filtered by Position's open timestamp
+message ProtoPositionListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_POSITION_LIST_REQ];
+    optional int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 fromTimestamp = 3; // UNIX timestamp in milliseconds of starting the search (by Position's open timestamp)
+    required int64 toTimestamp = 4; // UNIX timestamp in milliseconds of finishing the search (by Position's open timestamp)
+}
+
+// Response for ProtoPositionListReq
+message ProtoPositionListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_POSITION_LIST_RES];
+    optional int64 traderId = 2; // Unique identifier of the Trader within environment
+    repeated ProtoPosition position = 3; // Position entities, ordered by openTimestamp (first entity is newest)
+    required bool hasMore = 4; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to get list of pending (accepted) orders, filtered by Order's open timestamp
+message ProtoPendingOrderListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PENDING_ORDER_LIST_REQ];
+    optional int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 fromTimestamp = 3; // UNIX timestamp in milliseconds of starting the search (by Order's open timestamp)
+    required int64 toTimestamp = 4; // UNIX timestamp in milliseconds finishing the search (by Order's open timestamp)
+}
+
+// Response for ProtoPendingOrderListReq
+message ProtoPendingOrderListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PENDING_ORDER_LIST_RES];
+    optional int64 traderId = 2; // Unique identifier of the Trader within environment
+    repeated ProtoOrder order = 3; // Order entities, ordered by openTimestamp (first entity is newest)
+    required bool hasMore = 4; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to get history of balance changes (only deposits and withdraws), filtered by DepositWithdraw's timestamp
+message ProtoBalanceHistoryListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_BALANCE_HISTORY_LIST_REQ];
+    optional int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 fromTimestamp = 3; // UNIX timestamp in milliseconds of starting the search (by deposit/withdrawal timestamp)
+    required int64 toTimestamp = 4; // UNIX timestamp in milliseconds finishing the search (by deposit/withdrawal timestamp)
+}
+
+// Response for ProtoBalanceHistoryListReq
+message ProtoBalanceHistoryListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_BALANCE_HISTORY_LIST_RES];
+    optional int64 traderId = 2; // Unique identifier of the Trader within environment
+    repeated ProtoDepositWithdraw depositWithdraw = 3; // Deposit or Withdrawal entities, ordered by changeBalanceTimestamp (first entity is newest)
+    optional bool hasMore = 4; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to get history of bonus changes (only deposits and withdraws), filtered by BonusDepositWithdraw's timestamp
+message ProtoBonusHistoryListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_BONUS_HISTORY_LIST_REQ];
+    optional int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 fromTimestamp = 3; // UNIX timestamp in milliseconds from which the search starts (by bonus deposit/withdrawal created time)
+    required int64 toTimestamp = 4; // UNIX timestamp in milliseconds of finishing the search (by bonus deposit/withdrawal created time)
+}
+
+// Response for ProtoBonusHistoryListReq
+message ProtoBonusHistoryListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_BONUS_HISTORY_LIST_RES];
+    optional int64 traderId = 2; // Unique identifier of the Trader within environment
+    repeated ProtoBonusDepositWithdraw bonusDepositWithdraw = 3; // Bonus Deposit or Withdrawal entities, ordered by changeBonusTimestamp (first entity is newest)
+    optional bool hasMore = 4; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of records that is equal to internal chunk size
+}
+
+// Request to get exposure per Symbol
+message ProtoExposureSymbolListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_EXPOSURE_SYMBOL_LIST_REQ];
+    required ProtoBookRequestType bookType = 2; // Type of the Book
+}
+
+// Response for ProtoExposureSymbolListReq
+message ProtoExposureSymbolListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_EXPOSURE_SYMBOL_LIST_RES];
+    repeated ProtoExposureSymbolRecord exposureSymbolRecord = 2; // Exposure data per Symbol
+}
+
+// Request to get server settings (see ProtoServerSettingType in ModelMessages to see settings types)
+message ProtoServerSettingsReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SERVER_SETTINGS_REQ];
+}
+
+// Response for ProtoServerSettingsReq
+message ProtoServerSettingsRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SERVER_SETTINGS_RES];
+    repeated ProtoServerSetting serverSetting = 2; // List of Server settings
+}
+
+// Request to get list of Assets
+message ProtoAssetListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ASSET_LIST_REQ];
+}
+
+// Response for ProtoAssetListReq
+message ProtoAssetListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ASSET_LIST_RES];
+    repeated ProtoAsset asset = 2; // Asset entities
+}
+
+// Request to list of Price Streams
+message ProtoPriceStreamListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PRICE_STREAM_LIST_REQ];
+}
+
+// Response for ProtoPriceStreamListReq
+message ProtoPriceStreamListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PRICE_STREAM_LIST_RES];
+    repeated ProtoPriceStream priceStream = 2; // Price Stream entities
+}
+
+// Request to get list of Liquidity Feeds
+message ProtoLiquidityFeedListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIQUIDITY_FEED_LIST_REQ];
+}
+
+// Response for ProtoLiquidityFeedListReq
+message ProtoLiquidityFeedListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIQUIDITY_FEED_LIST_RES];
+    repeated ProtoLiquidityFeed feed = 2; // Liquidity Feed entities
+}
+
+// Request to get list of Deals, filtered by creation timestamp
+message ProtoManagerDealListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_DEAL_LIST_REQ];
+    repeated int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 fromTimestamp = 3; // UNIX timestamp in milliseconds from which the search starts (by Deal creation timestamp)
+    required int64 toTimestamp = 4; // UNIX timestamp in milliseconds where to stop searching (by Deal creation timestamp)
+    optional int32 maxRows = 5; // The maximum number of the Deals to return
+    optional bool closingDealsOnly = 6 [default = false]; // If TRUE then only Closing Deals are returned
+    optional bool includeAdditionalVolumes = 7 [default = false]; // If TRUE then filledEurVolume and filledGbpVolume are returned for Deals
+    optional bool withFilledVolumeOnly = 8 [default = false]; // If TRUE then only filled and partially filled Deals are returned
+    repeated int64 groupId = 9;//Only deals related to the traders from the specified groups will be returned.
+}
+
+// Response for ProtoManagerDealListReq
+message ProtoManagerDealListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_DEAL_LIST_RES];
+    repeated ProtoDeal deal = 2; // Deal entities
+    required bool hasMore = 3; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to get list of Deals related to the specified Position, filtered by creation timestamp
+message ProtoManagerDealListByPositionIdReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_DEAL_LIST_BY_POSITION_ID_REQ];
+    required int64 positionId = 2; // The unique ID of the Position
+    required int64 fromTimestamp = 3; // UNIX timestamp in milliseconds from which the search starts (by Deal creation time)
+    required int64 toTimestamp = 4; // UNIX timestamp in milliseconds where to stop searching (by Deal creation time)
+}
+
+// Response for ProtoManagerDealListByPositionIdReq
+message ProtoManagerDealListByPositionIdRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_DEAL_LIST_BY_POSITION_ID_RES];
+    repeated ProtoDeal deal = 2; // List of Deals
+    required bool hasMore = 3; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to get list of orders related to the specified Position
+message ProtoManagerOrderListByPositionIdReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER__ORDER_LIST_BY_POSITION_ID_REQ];
+    required int64 positionId = 2; // The unique ID of the Position
+    required int64 fromTimestamp = 3; // UNIX timestamp in milliseconds from which the search starts
+    required int64 toTimestamp = 4; // UNIX timestamp in milliseconds where to stop searching
+}
+
+// Response for ProtoManagerOrderListByPositionIdReq
+message ProtoManagerOrderListByPositionIdRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER__ORDER_LIST_BY_POSITION_ID_RES];
+    repeated ProtoOrder order = 2; // List of Orders
+    required bool hasMore = 3; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to get list of Dynamic Leverage entities (https://help.ctrader.com/trading-with-ctrader/dynamic-leverage)
+message ProtoDynamicLeverageListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DYNAMIC_LEVERAGE_LIST_REQ];
+}
+
+// Response for ProtoDynamicLeverageListReq
+message ProtoDynamicLeverageListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DYNAMIC_LEVERAGE_LIST_RES];
+    repeated ProtoDynamicLeverage leverage = 2; // Dynamic Leverage entity. https://help.ctrader.com/ctrader/trading/dynamic-leverage
+}
+
+// Request to get list of Guaranteed Stop Loss (GSL) Schedule items. GSl Schedule allows to change GSL by Schedule
+message ProtoGSLScheduleListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_GSL_SCHEDULE_LIST_REQ];
+}
+
+// Response for ProtoGSLScheduleListReq
+message ProtoGSLScheduleListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_GSL_SCHEDULE_LIST_RES];
+    repeated ProtoGSLSchedule schedule = 2; // List of GSL Schedule entities
+}
+
+// Request to create/update/delete Trader
+message ProtoCrudTraderReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_TRADER_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoTrader trader = 3; // Trader entity
+    optional bool validateVersion = 4; // If this field is TRUE then server will accept UPDATE operation only if ProtoTrader has the same version that is currently stored in the server's memory
+}
+
+// Response for ProtoCrudTraderReq
+message ProtoCrudTraderRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_TRADER_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 traderId = 3; // Unique identifier of the Trader within environment
+}
+
+// Request to update Symbol (to create Symbol use ProtoCreateSymbolReq)
+message ProtoCrudSymbolReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_SYMBOL_REQ];
+    required ProtoCrudOperation operation = 2; // Update/delete operation
+    required ProtoManagerSymbol symbol = 3; // Symbol entity
+}
+
+// Response for ProtoCrudSymbolReq
+message ProtoCrudSymbolRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_SYMBOL_RES];
+    required ProtoCrudOperation operation = 2; // Update/delete operation
+    required int64 symbolId = 3; // The unique identifier of the Symbol in specific server environment within cTrader platform
+}
+
+// Request to create/update/delete group. Groups are used to manage Trader's settings and Manager permission. Each Trader belongs to one group
+message ProtoCrudGroupReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_GROUP_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update_diff/delete operation. Update_diff means that only changed parameters are sent in request (other parameters stay unchanged)
+    required ProtoGroup group = 3; // Group entity
+}
+
+// Response for ProtoCrudGroupReq
+message ProtoCrudGroupRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_GROUP_RES];
+    required ProtoCrudOperation operation = 2; // Create/update_diff/delete operation
+    required int64 groupId = 3; // ID of the Group
+    optional ProtoGroup group = 4; // Group entity
+}
+
+// Request to create/update/delete Manager
+message ProtoCrudManagerReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_MANAGER_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoManager manager = 3; // Manager entity
+}
+
+// Response for ProtoCrudManagerReq
+message ProtoCrudManagerRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_MANAGER_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 managerId = 3; // ID of Manager
+}
+
+// Request to create/update/delete Asset
+message ProtoCrudAssetReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_ASSET_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoAsset asset = 3; // Asset entity
+}
+
+// Response for ProtoCrudAssetReq
+message ProtoCrudAssetRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_ASSET_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 assetId = 3; // ID of Asset
+}
+
+// Request to create/update/delete liquidity Feed link to symbol
+message ProtoCrudLiquidityFeedSymbolReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_LIQUIDITY_FEED_SYMBOL_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoLiquidityFeedSymbol liquidityFeedSymbol = 3; // Liquidity Feed for Symbol entity
+}
+
+// Response for ProtoCrudLiquidityFeedSymbolReq
+message ProtoCrudLiquidityFeedSymbolRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_LIQUIDITY_FEED_SYMBOL_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 liquidityFeedSymbolId = 3; // Liquidity Feed for Symbol entity
+}
+
+// Request to create/update/delete Swap and Dividend Profile. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudSwapAndDividendProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_SWAP_AND_DIVIDEND_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update_diff/delete operation. Update_diff operations means that swapAndDividendSymbol records which are not sent will not be changed
+    required ProtoSwapAndDividendProfile swapAndDividendProfile = 3; // Swap and Dividend Profile entity
+}
+
+// Response for ProtoCrudSwapAndDividendProfileReq
+message ProtoCrudSwapAndDividendProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_SWAP_AND_DIVIDEND_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 swapAndDividendProfileId = 3; // ID of Swap and Dividend Profile
+}
+
+// Request to change Trader's balance
+message ProtoChangeBalanceReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHANGE_BALANCE_REQ];
+    required int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 amount = 3; // Amount of balance operation
+    optional string comment = 4; // Comment seen by Manager
+    required ProtoChangeBalanceType type = 5; // Type of operation
+    optional int64 managerId = 6; // ID of the Manager
+    optional string externalNote = 7; // Comment seen by Trader and Manager
+    optional string source = 8; // Field can be used to determine source of payment (e. g VISA or PayPal)
+    optional string externalId = 9; // External ID which can be used for easy reconciliation
+    optional bool newWay = 10; // Must be set to TRUE. If TRUE then for amount protocol value 1 is minimal value according to ProtoAsset.digits (=1/(10^digits)), e.g. if Trader's deposit Asset is JPY (digits=0), then value 1 equals to 1.00 JPY; if in USD (digits=2) then 1 equals to 0.01 USD. If FALSE, then 1 protocol value=0.01
+}
+
+// Response for ProtoChangeBalanceReq
+message ProtoChangeBalanceRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CHANGE_BALANCE_RES];
+    required int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 balanceHistoryId = 3; // ID of balance history record
+}
+
+// Request to change server settings. See ProtoServerSetting in model messages for the types of settings
+message ProtoUpdateServerSettingsReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_UPDATE_SERVER_SETTINGS_REQ];
+    repeated ProtoServerSetting serverSetting = 2; // Server Settings to be updated
+}
+
+// Response for ProtoUpdateServerSettingsReq
+message ProtoUpdateServerSettingsRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_UPDATE_SERVER_SETTINGS_RES];
+}
+
+// Request to create price stream
+message ProtoCreatePriceStreamReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PRICE_STREAM_CREATE_REQ];
+    required ProtoPriceStream priceStream = 2; // Price Stream entity
+}
+
+// Response for ProtoCreatePriceStreamReq
+message ProtoCreatePriceStreamRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PRICE_STREAM_CREATE_RES];
+    required int64 priceStreamId = 2; // ID of Price Stream entity
+}
+
+// Request to delete price stream
+message ProtoDeletePriceStreamReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PRICE_STREAM_DELETE_REQ];
+    required int64 priceStreamId = 2; // ID of Price Stream entity
+}
+
+// Response for ProtoDeletePriceStreamReq
+message ProtoDeletePriceStreamRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PRICE_STREAM_DELETE_RES];
+    required int64 priceStreamId = 2; // ID of Price Stream entity
+}
+
+// Request to update price stream
+message ProtoUpdatePriceStreamReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PRICE_STREAM_UPDATE_REQ];
+    required int64 priceStreamId = 2; // ID of Price Stream entity
+    required string name = 3; // Name of price stream
+    optional string description = 4; // Description of of Price Stream
+    repeated ProtoUpdatePriceStreamSymbol updateSymbol = 5; // Entities with parameters to be updated
+
+    message ProtoUpdatePriceStreamSymbol {
+        required int64 symbolId = 1; // The unique identifier of the Symbol in specific server environment within cTrader platform
+        optional int32 bidMarkup = 2; // Bid markup in pipettes
+        optional int32 askMarkup = 3; // Ask markup in pipettes
+        required ProtoCrudOperation operation = 4; // Create/update/delete of setting for specific symbol
+        optional bool markupIsRelative = 5; // If TRUE then markup is - bidMarkup/1000 %
+    }
+}
+
+// Response for ProtoUpdatePriceStreamReq
+message ProtoUpdatePriceStreamRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PRICE_STREAM_UPDATE_RES];
+    required int64 priceStreamId = 2; // ID of Price Stream entity
+}
+
+// Request to create/update/delete Dynamic Leverage settings (https://help.ctrader.com/trading-with-ctrader/dynamic-leverage)
+message ProtoCrudDynamicLeverageReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_DYNAMIC_LEVERAGE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete
+    required ProtoDynamicLeverage leverage = 3; // Dynamic Leverage entity
+}
+
+// Response for ProtoCrudDynamicLeverageReq
+message ProtoCrudDynamicLeverageRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_DYNAMIC_LEVERAGE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete
+    required int64 leverageId = 3; // ID of Dynamic Leverage entity
+}
+
+// Request to create/update/delete Guaranteed Stop Loss (GSL) schedule items. GSL Schedule allows to change GSL by Schedule
+message ProtoCrudGSLScheduleReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_GSL_SCHEDULE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete
+    required ProtoGSLSchedule schedule = 3; // GSL schedule entity
+}
+
+// Response for ProtoCrudGSLScheduleReq
+message ProtoCrudGSLScheduleRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_GSL_SCHEDULE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete
+    required int64 scheduleId = 3; // ID of GSL schedule entity
+}
+
+// Event that is sent when Trader is created/updated/deleted
+message ProtoTraderChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRADER_CHANGED_EVENT];
+    required ProtoTrader trader = 2; // Trader entity
+    required ProtoCrudOperation operation = 3; // Create/update/delete operation
+}
+
+// Event that is sent when group is created/updated/deleted. Groups are used to manage Trader settings and Manager permission. Each Trader belongs to one group
+message ProtoGroupChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_GROUP_CHANGED_EVENT];
+    required ProtoGroup group = 2; // Group entity
+    required ProtoCrudOperation operation = 3; // Create/update_diff/delete operation. Update_diff means that only changed parameters are sent in request (other parameters stay unchanged)
+}
+
+// Event that is sent when Symbol is created/updated/deleted
+message ProtoManagerSymbolChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_SYMBOL_CHANGED_EVENT];
+    required ProtoManagerSymbol symbol = 2; // Symbol entity
+    required ProtoCrudOperation operation = 3; // Create/update/delete operation
+}
+
+// Event that is sent when Manager is created/updated/deleted
+message ProtoManagerChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_CHANGED_EVENT];
+    required ProtoManager manager = 2; // Manager entity
+    required ProtoCrudOperation operation = 3; // Create/update/delete operation
+}
+
+// Event that is sent when server Settings are changed
+message ProtoServerSettingsChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SERVER_SETTINGS_CHANGED_EVENT];
+    repeated ProtoServerSetting serverSetting = 2; // Server Settings list
+}
+
+// Event that is sent when price stream is created/updated/deleted
+message ProtoPriceStreamChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PRICE_STREAM_CHANGED_EVENT];
+    required ProtoPriceStream priceStream = 2; // Price Stream entity
+    required ProtoCrudOperation operation = 3; // Create/update/delete operation
+}
+
+// Event that is sent when Dynamic Leverage is changed (https://help.ctrader.com/trading-with-ctrader/dynamic-leverage)
+message ProtoDynamicLeverageChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DYNAMIC_LEVERAGE_CHANGED_EVENT];
+    required ProtoDynamicLeverage leverage = 2; // Dynamic Leverage entity
+    required ProtoCrudOperation operation = 3; // Create/update/delete operation
+}
+
+// Event that is sent when Guaranteed Stop Loss (GSL) schedule item is changed. GSL schedule allows to change GSL settings by schedule
+message ProtoGSLScheduleChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_GSL_SCHEDULE_CHANGED_EVENT];
+    required ProtoGSLSchedule schedule = 2; // GSL schedule entity
+    required ProtoCrudOperation operation = 3; // Create/update/delete operation
+}
+
+// Event that is sent when Manager loses access to Trader due to permissions change
+message ProtoTraderPermissionLoseEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRADER_PERMISSION_LOSE_EVENT];
+    optional int64 traderId = 2; // Unique identifier of the Trader within environment
+}
+
+// Event that sent when Asset is created/updated/deleted
+message ProtoAssetChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ASSET_CHANGED_EVENT];
+    required ProtoAsset asset = 2; // Asset entity
+    required ProtoCrudOperation operation = 3; // Create/update/delete operation
+}
+
+// Event that sent when liquidity Feed is created/updated/deleted
+message ProtoLiquidityFeedSymbolChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIQUIDITY_FEED_SYMBOL_CHANGED_EVENT];
+    required ProtoLiquidityFeedSymbol liquidityFeedSymbol = 2; // Liquidity Feed to Symbol link entity
+    required ProtoCrudOperation operation = 3; // Create/update/delete operation
+}
+
+// Event that sent when Swap And Dividend Profile is created/updated/deleted. Profile is a set of settings which is applied within specific Groups
+message ProtoSwapAndDividendProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SWAP_AND_DIVIDEND_PROFILE_CHANGED_EVENT];
+    required ProtoSwapAndDividendProfile swapAndDividendProfile = 2; // Swap And Dividend Profile entity
+    required ProtoCrudOperation operation = 3; // Create/update/delete operation
+}
+
+// Request to get Trader by id
+message ProtoTraderByIdReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRADER_BY_ID_REQ];
+    repeated int64 traderId = 2; // Unique identifier of the Trader within environment
+}
+
+// Response for ProtoTraderByIdReq
+message ProtoTraderByIdRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRADER_BY_ID_RES];
+    repeated ProtoTrader trader = 2; // Trader entities
+}
+
+// Request to get group by id
+message ProtoGroupByIdReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_GROUP_BY_ID_REQ];
+    required int64 groupId = 2; // ID of group
+}
+
+// Response for ProtoGroupByIdReq
+message ProtoGroupByIdRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_GROUP_BY_ID_RES];
+    required ProtoGroup group = 2; // Group entity
+}
+
+// Request to get list of countries
+message ProtoCountryListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_COUNTRY_LIST_REQ];
+}
+
+// Response for ProtoCountryListReq
+message ProtoCountryListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_COUNTRY_LIST_RES];
+    repeated ProtoCountry country = 2; // Country entities
+}
+
+// The request to get the number of the current version of cServer
+message ProtoVersionReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_VERSION_REQ];
+}
+
+// The response to ProtoVersionReq
+message ProtoVersionRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_VERSION_RES];
+    required string version = 2; // The number of current cServer version
+}
+
+// Request to get list of Asset Classes
+message ProtoAssetClassListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ASSET_CLASS_LIST_REQ];
+}
+
+// Response for ProtoAssetClassListReq
+message ProtoAssetClassListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ASSET_CLASS_LIST_RES];
+    repeated ProtoAssetClass assetClass = 2; // Asset Class entities
+}
+
+// Request to get list of Orders, filtered by utcLastUpdateTimestamp
+message ProtoOrderManagerListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ORDER_MANAGER_LIST_REQ];
+    required int64 fromTimestamp = 2; // UNIX timestamp in milliseconds of starting the search. Search by utcLastUpdateTimestamp of the Order
+    required int64 toTimestamp = 3; // UNIX timestamp in milliseconds of finishing the search. Search by utcLastUpdateTimestamp of the Order
+    optional int64 traderId = 4; // Unique identifier of the Trader within environment
+}
+
+// Response for ProtoOrderManagerListReq
+message ProtoOrderManagerListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ORDER_MANAGER_LIST_RES];
+    repeated ProtoOrder order = 2; // Order entities, sorted by utcLastUpdateTimestamp in descending order (newest first)
+    required bool hasMore = 3; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to get Deal by ID
+message ProtoManagerGetDealReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_GET_DEAL_REQ];
+    required uint64 dealId = 2; // The unique ID of the execution Deal
+}
+
+// Response for ProtoManagerGetDealReq
+message ProtoManagerGetDealRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_GET_DEAL_RES];
+    required ProtoDeal deal = 2; // Deal (execution) entity
+}
+
+// Request to get closed Positions
+message ProtoManagerClosedPositionListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_CLOSED_POSITION_LIST_REQ];
+    required int64 fromTimestamp = 2; // UNIX timestamp in milliseconds from which start the searching
+    required int64 toTimestamp = 3; // UNIX timestamp in milliseconds of finishing the search
+    optional int64 traderId = 4; // Unique identifier of the Trader within environment
+}
+
+// Response for ProtoManagerClosedPositionListReq
+message ProtoManagerClosedPositionListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_CLOSED_POSITION_LIST_RES];
+    repeated ProtoPosition position = 2; // List of Positions
+    required bool hasMore = 3; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to get Position info by Position's ID
+message ProtoPositionDetailsLiteReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_POSITION_DETAILS_LITE_REQ];
+    required int64 positionId = 2; // The unique ID of the Position
+}
+
+// Response for ProtoPositionDetailsLiteReq
+message ProtoPositionDetailsLiteRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_POSITION_DETAILS_LITE_RES];
+    repeated ProtoStopLossTakeProfitChangeRecord stopLossTakeProfitChangeRecord = 4; // Information about SL and TP changes
+    repeated ProtoSwapCalculationRecord swapCalculationRecord = 5; // Information about Swap calculation
+    optional ProtoPosition position = 6; // Position entity
+}
+
+// Request to create and send a new Order
+message ProtoManagerNewOrderReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_NEW_ORDER_REQ];
+    required uint64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 symbolId = 3; // Unique identifier of the Symbol within environment
+    required ProtoOrderType orderType = 4; // The type of an Order - MARKET, LIMIT, STOP, MARKET_RANGE, STOP_LIMIT
+    required ProtoTradeSide tradeSide = 5; // The trade direction - BUY or SELL
+    required int64 volume = 6; // The volume represented in 0.01 of a unit (e.g. US$ 10.00 = 1000)
+    optional double limitPrice = 7; // The limit price, can be specified for the LIMIT Order only
+    optional double stopPrice = 8; // The stop price, can be specified for the STOP and the STOP_LIMIT Orders only
+    optional ProtoTimeInForce timeInForce = 9 [default = GOOD_TILL_CANCEL]; // The specific Order execution or expiration instruction - GOOD_TILL_DATE, GOOD_TILL_CANCEL, IMMEDIATE_OR_CANCEL, FILL_OR_KILL, MARKET_ON_OPEN. Default: GOOD_TILL_CANCEL
+    optional int64 expirationTimestamp = 10; // UNIX timestamp in milliseconds of the Order expiration time. Should be set for the Good Till Date Orders
+    optional double stopLoss = 12; // The absolute Stop Loss price (1.23456 for example). Not supported for the MARKET Orders
+    optional double takeProfit = 13; // The absolute Take Profit price (1.23456 for example). Unsupported for the MARKET Orders
+    optional string comment = 16; // User-specified comment. MaxLength = 512
+    optional string method = 17; // Technical field - to be filled with "ManagerAPI"
+    optional double baseSlippagePrice = 19; // Base price to calculate relative slippage price for MARKET_RANGE Order
+    optional string label = 21; // User-specified label. MaxLength = 100
+    optional string channel = 22; // Technical field - to be filled with "ManagerAPI"
+    optional int64 positionId = 23; // The unique ID of the Position
+    optional string clientOrderId = 24; // Optional user-specific clientOrderId (similar to FIX ClOrderID). MaxLength = 50
+    optional string clientToken = 25; // Deprecated field
+    optional int64 relativeStopLoss = 26; // Relative Stop Loss that can be specified instead of the absolute as one. Specified in 1/100000 of unit of a price. For BUY stopLoss = entryPrice - relativeStopLoss, for SELL stopLoss = entryPrice + relativeStopLoss
+    optional int64 relativeTakeProfit = 27; // Relative Take Profit that can be specified instead of the absolute one. Specified in 1/100000 of unit of a price. For BUY takeProfit = entryPrice + relativeTakeProfit, for SELL takeProfit = entryPrice - relativeTakeProfit
+    optional bool trailingStopLoss = 30; // If TRUE then the Stop Loss is Trailing
+    optional ProtoOrderTriggerMethod stopTriggerMethod = 31 [default = TRADE]; // Trigger Method for the STOP or the STOP_LIMIT pending Order. Default: TRADE
+    optional ProtoOrderTriggerMethod stopLossTriggerMethod = 32 [default = TRADE]; // Stop Trigger Method for SL/TP Order
+    optional int32 slippageInPoints = 33; // Slippage Distance for MARKET_RANGE and STOP_LIMIT Order
+    optional int64 desiredOpenTimestamp = 34; // UNIX timestamp in milliseconds used to set time of the opening for MARKET_ON_OPEN Orders
+}
+
+// Request to amend existing Order
+message ProtoManagerAmendOrderReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_AMEND_ORDER_REQ];
+    required uint64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 orderId = 3; // The unique ID of the Order
+    optional ProtoTimeInForce timeInForce = 4 [default = GOOD_TILL_CANCEL]; // The specific Order execution or expiration instruction - GOOD_TILL_DATE, GOOD_TILL_CANCEL, IMMEDIATE_OR_CANCEL, FILL_OR_KILL, MARKET_ON_OPEN. Default: GOOD_TILL_CANCEL
+    optional double limitPrice = 5; // The limit price, can be specified for the LIMIT Order only
+    optional double stopPrice = 6; // The stop price, can be specified for the STOP and the STOP_LIMIT Orders only
+    optional int64 expirationTimestamp = 7; // UNIX timestamp in milliseconds of the Order expiration time. Should be set for the Good Till Date Orders
+    optional double stopLoss = 9; // The absolute Stop Loss price (1.23456 for example). Not supported for the MARKER Orders
+    optional double takeProfit = 10; // The absolute Take Profit price (1.23456 for example). Unsupported for the MARKER Orders
+    optional string comment = 13; // User-specified comment. MaxLength = 512
+    optional string channel = 14; // Technical field - to be filled with "ManagerAPI"
+    optional int64 relativeStopLoss = 15; // Relative Stop Loss that can be specified instead of the absolute as one. Specified in 1/100000 of unit of a price. For BUY stopLoss = entryPrice - relativeStopLoss, for SELL stopLoss = entryPrice + relativeStopLoss
+    optional int64 relativeTakeProfit = 16; // Relative Take Profit that can be specified instead of the absolute one. Specified in 1/100000 of unit of a price. For BUY takeProfit = entryPrice + relativeTakeProfit, for SELL takeProfit = entryPrice - relativeTakeProfit
+    optional int64 volume = 17; // The volume represented in 0.01 of a unit (e.g. US$ 10.00 = 1000)
+    optional bool trailingStopLoss = 20; // If TRUE then the Stop Loss is Trailing
+    optional ProtoOrderTriggerMethod stopTriggerMethod = 21 [default = TRADE]; // Trigger Method for the STOP or the STOP_LIMIT pending Order
+    optional ProtoOrderTriggerMethod stopLossTriggerMethod = 22 [default = TRADE]; // Stop Trigger Method for SL/TP Order
+    optional int32 slippageInPoints = 23; // Slippage Distance for MARKET_RANGE and STOP_LIMIT Order
+    optional int64 desiredOpenTimestamp = 24; // UNIX timestamp in milliseconds used to set time of the opening for MARKET_ON_OPEN Orders
+}
+
+// Request to cancel an Order
+message ProtoManagerCancelOrderReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_CANCEL_ORDER_REQ];
+    required uint64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 orderId = 3; // The unique ID of the Order
+}
+
+// Request to amend Position
+message ProtoManagerAmendPositionReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_AMEND_POSITION_REQ];
+    required uint64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 positionId = 3; // The unique ID of the Position
+    optional double stopLoss = 4; // The absolute Stop Loss price (1.23456 for example). Not supported for the MARKER Orders
+    optional double takeProfit = 5; // The absolute Take Profit price (1.23456 for example). Unsupported for the MARKER Orders
+    optional string channel = 6; // Technical field - to be filled with "ManagerAPI"
+    optional bool trailingStopLoss = 9; // If TRUE then the Stop Loss is Trailing
+    optional ProtoOrderTriggerMethod stopLossTriggerMethod = 10 [default = TRADE]; // Stop Trigger Method for SL/TP Order
+}
+
+// Request to close Position
+message ProtoManagerClosePositionReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_CLOSE_POSITION_REQ];
+    required uint64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 positionId = 3; // The unique ID of the Position to close
+    required int64 volume = 4; // Volume to close, represented in 0.01 of a unit (e.g. cents)
+    optional string channel = 7; // Technical field - to be filled with "ManagerAPI"
+}
+
+// Event that is sent when errors occur during the Order requests
+message ProtoOrderErrorEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ORDER_ERROR_EVENT];
+    required string errorCode = 2; // The name of the ProtoErrorCode or the other custom ErrorCodes (e.g. ProtoCHErrorCode)
+    optional int64 orderId = 3; // The unique ID of the Order
+    optional int64 traderId = 5; // Unique identifier of the Trader within environment
+    optional int64 positionId = 6; // The unique ID of the Position
+    optional string description = 7; // Error description
+}
+
+// Event that is sent when Trader logs on the server
+message ProtoTraderLogonEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRADER_LOGON_EVENT];
+    required ProtoTraderSessionInfo tradeSessionInfo = 2; // Session info
+}
+
+// Event that is sent when Trader logs out of the server
+message ProtoTraderLogoutEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRADER_LOGOUT_EVENT];
+    required uint64 sessionId = 2; // ID of the Trader's session
+    optional uint64 traderId = 3; // Unique identifier of the Trader within environment
+    optional bool isOnline = 4; // If TRUE then Trader is still online
+}
+
+// Request to change Trader's Bonus
+message ProtoManagerChangeBonusReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_CHANGE_BONUS_REQ];
+    required int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 amount = 3; // Amount of the Bonus operation
+    optional string comment = 4; // Comment seen by Manager
+    required ProtoChangeBonusType type = 5; // Type of operation
+    optional string externalNote = 6; // Comment seen by Trader and Manager
+    optional bool newWay = 7; // Must be set to TRUE. If TRUE then for amount protocol value 1 is minimal value according to ProtoAsset.digits (=1/(10^digits)), e.g. if Trader's deposit Asset is JPY (digits=0), then value 1 equals to 1.00 JPY; if USD (digits=2) then 1 equals to 0.01 USD. If FALSE, then 1 protocol value=0.01
+    optional ProtoBonusOwner owner = 8 [default = MANAGER]; // Who provided Bonus, Manager or Introducing Broker
+}
+
+// Response for ProtoManagerChangeBonusReq
+message ProtoManagerChangeBonusRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_CHANGE_BONUS_RES];
+    required int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 bonusHistoryId = 3; // ID of Bonus History record
+}
+
+// Request for a list of Symbol categories available for a Trader
+message ProtoSymbolCategoryListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SYMBOL_CATEGORY_LIST_REQ];
+}
+
+// Response for ProtoSymbolCategoryListReq
+message ProtoSymbolCategoryListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SYMBOL_CATEGORY_LIST_RES];
+    repeated ProtoSymbolCategory categories = 2; // List of Symbol categories
+}
+
+// Request for getting a conversion chain between two Assets that consists of several symbols. Use when no direct quote is available
+message ProtoGetSymbolsForConversionReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SYMBOLS_FOR_CONVERSION_REQ];
+    required int64 firstAssetId = 2; // The ID of the first Asset in the conversation chain. e.g.: for EUR/USD the firstAssetId is EUR ID and lastAssetId is USD ID
+    required int64 lastAssetId = 3; // The ID of the last Asset in the conversation chain. e.g.: for EUR/USD the firstAssetId is EUR ID and lastAssetId is USD ID
+}
+
+// Response for ProtoGetSymbolsForConversionReq
+message ProtoGetSymbolsForConversionRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SYMBOLS_FOR_CONVERSION_RES];
+    repeated ProtoLightSymbol symbol = 2; // Symbol entities (with limited number of fields)
+}
+
+// Request to get Dealing Settings
+message ProtoDealingSettingsReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DEALING_SETTINGS_REQ];
+}
+
+// Response for ProtoDealingSettingsReq
+message ProtoDealingSettingsRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DEALING_SETTINGS_RES];
+    required bool alwaysManualEnabled = 2; // Parameter which enables Symbol's alwaysManual parameter. So, if enableAlwaysManual=0 then alwaysManual is ignored
+    required int32 minGapTolerance = 3; // Percentage multiplied by 10000: min = 0%, max = 100%, step = 0.0001%. 31234 value would mean 3.1234%. If abs(trigger price - order price)/trigger price*100% <= minGapTolerance then Order should be executed at the Order price. Valid for pending and protections
+    required int32 maxGapTolerance = 4; // Percentage multiplied by 10000: min = 0%, max = 100%, step = 0.0001%. 31234 value would mean 3.1234%. If abs(trigger price - order price)/trigger price*100% >= maxGapTolerance then Order should be passed for the Dealer. Valid for pending and protections
+    repeated ProtoDealingSymbol symbol = 5; // Dealing Symbol entities
+    required int64 manualDealTimeout = 6; // After the specified timeout specified action will be carried out
+    optional ProtoManualDealTimeoutAction manualDealTimeoutAction = 7; // Parameter specifies what must happen with the Deal after manualDealTimeout - execution/rejection
+}
+
+// Request to update Dealing Settings
+message ProtoUpdateDealingSettingsReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_UPDATE_DEALING_SETTINGS_REQ];
+    optional bool alwaysManualEnabled = 2; // Parameter which enables Symbol's alwaysManual parameter. So, if enableAlwaysManual=0 then alwaysManual is ignored
+    optional int32 minGapTolerance = 3; // Percentage multiplied by 10000: min = 0%, max = 100%, step = 0.0001%. 31234 value would mean 3.1234%. If abs(trigger price - order price)/trigger price*100% <= minGapTolerance then Order should be executed at the Order price. Valid for pending and protections
+    optional int32 maxGapTolerance = 4; // Percentage multiplied by 10000: min = 0%, max = 100%, step = 0.0001%. 31234 value would mean 3.1234%. If abs(trigger price - order price)/trigger price*100% >= maxGapTolerance then Order should be passed for the Dealer. Valid for pending and protections
+    repeated ProtoDealingSymbol symbol = 5; // Dealing Symbol entities
+    optional int64 manualDealTimeout = 6; // After the specified timeout specified action will be carried out
+    optional ProtoManualDealTimeoutAction manualDealTimeoutAction = 7; // Parameter specifies what must happen with the Deal after manualDealTimeout - execution/rejection
+}
+
+// Response for ProtoUpdateDealingSettingsReq
+message ProtoUpdateDealingSettingsRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_UPDATE_DEALING_SETTINGS_RES];
+}
+
+// Event that is sent when Dealing Settings are changed
+message ProtoDealingSettingsUpdatedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DEALING_SETTINGS_UPDATED_EVENT];
+    optional bool alwaysManualEnabled = 2; // Parameter which enables Symbol's alwaysManual parameter. So, if enableAlwaysManual=0 then alwaysManual is ignored
+    optional int32 minGapTolerance = 3; // Percentage multiplied by 10000: min = 0%, max = 100%, step = 0.0001%. 31234 value would mean 3.1234%.  If abs(trigger price - order price)/trigger price*100% <= minGapTolerance then Order should be executed at the Order price. Valid for pending and protections
+    optional int32 maxGapTolerance = 4; // Percentage multiplied by 10000: min = 0%, max = 100%, step = 0.0001%. 31234 value would mean 3.1234%. If abs(trigger price - order price)/trigger price*100% >= maxGapTolerance then Order should be passed for the Dealer. Valid for pending and protections
+    repeated ProtoDealingSymbol symbol = 5; // Dealing Symbol entities
+    optional int64 manualDealTimeout = 6; // After the specified timeout specified action will be carried out
+    optional ProtoManualDealTimeoutAction manualDealTimeoutAction = 7; // Parameter specifies what must happen with the Deal after manualDealTimeout - execution/rejection
+}
+
+// Request to get list of manually created Deals
+message ProtoManualDealListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_LIST_REQ];
+}
+
+// Response for ProtoManualDealListReq
+message ProtoManualDealListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_LIST_RES];
+    repeated ProtoManualDeal deal = 2; // Manual Deal entities
+}
+
+// Event that is sent when new Manual Deal is created
+message ProtoNewManualDealEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_NEW_MANUAL_DEAL_EVENT];
+    required int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 traderLogin = 3; // Unique identifier of the Trader within environment. Account can be identified either by traderLogin or by traderId
+    optional string traderName = 4; // Full name of the Trader
+    required int64 positionId = 6; // Reference to the Position linked with the Manual Deal
+    required int64 symbolId = 7; // ID of the Symbol
+    required int64 orderId = 8; // ID of the Order
+    required ProtoOrderType orderType = 9; // Type of the Order
+    required ProtoTradeSide tradeSide = 10; // The trade direction - BUY or SELL
+    required ProtoBookType bookType = 11; // Type of Book (BOOK A or BOOK B)
+    required bool closingOrder = 12; // If TRUE then the Order is closing part of whole Position. Must have specified positionId
+    required bool guaranteedStopLoss = 13; // If TRUE then Position's stop loss is guaranteedStopLoss
+    required bool checkTolerance = 14; // Tolerance check is a kind of check, which could give reject to the market Order if price of the market changed a lot
+    optional int64 limitPrice = 15; // The Limit Price, can be specified for the LIMIT Order only
+    optional int64 desiredVWAP = 16; // Price desired by the client as an execution price
+    required int64 dealId = 17; // ID of Deal (execution) entity
+    required int64 volume = 18; // The volume represented in 0.01 of a unit (e.g. US$ 10.00 = 1000)
+    optional int64 stake = 19; // Stake, filled under this Deal
+    optional int64 triggerPrice = 20; // Price which triggered the Deal
+    required int64 groupId = 21; // ID of the group of the Trader
+    optional string comment = 22; // Comment
+    required ProtoManualDealReason reason = 23; // What caused the Manual Deal
+    required int64 timestamp = 24; // UNIX timestamp in milliseconds of the Deal occurrence
+    required int64 markup = 25; // Deal total markup (per Symbol + per Price Stream)
+    optional bool stopOut = 26; // If TRUE then Deal was caused by Stop Out
+    optional int64 closeWithPID = 27; // Some number which may be used to aggregate Deals into Positions on the hedged accounts
+    required int64 depositAssetId = 28; // ID of the deposit Asset
+}
+
+// Request to claim Manual Deal for procession
+message ProtoManualDealClaimReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_CLAIM_REQ];
+    required int64 dealId = 2; // ID of Deal (execution) entity
+}
+
+// Response for ProtoManualDealClaimReq
+message ProtoManualDealClaimRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_CLAIM_RES];
+}
+
+// Event that is sent when new Manual Deal is claimed by Manager
+message ProtoManualDealClaimedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_CLAIMED_EVENT];
+    required int64 dealId = 2; // ID of the Manual Deal
+    required int64 managerId = 3; // ID of the Manager
+    required int64 managerLogin = 4; // Login of the Manager
+}
+
+// Request to cancel claiming of Manual Deal
+message ProtoManualDealUnclaimReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_UNCLAIM_REQ];
+    required int64 dealId = 2; // ID of the Manual Deal
+}
+
+// Response for ProtoManualDealUnclaimReq
+message ProtoManualDealUnclaimRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_UNCLAIM_RES];
+}
+
+// Event that is sent when new Manual Deal is unclaimed by manager
+message ProtoManualDealUnclaimedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_UNCLAIMED_EVENT];
+    required int64 dealId = 2; // ID of the Manual Deal
+}
+
+// Request to not execute Manual Deal. Order returns to the normal condition as if it had not been triggered
+message ProtoManualDealResetReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_RESET_REQ];
+    required int64 dealId = 2; // ID of the Manual Deal
+}
+
+// Response for ProtoManualDealResetReq
+message ProtoManualDealResetRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_RESET_RES];
+}
+
+// Request to reject Manual Deal
+message ProtoManualDealRejectReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_REJECT_REQ];
+    required int64 dealId = 2; // ID of the Manual Deal
+    optional string rejectReason = 3; // Reason for rejection of the Deal
+}
+
+// Response for ProtoManualDealRejectReq
+message ProtoManualDealRejectRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_REJECT_RES];
+}
+
+// Request to execute Manual Deal
+message ProtoManualDealExecuteReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_EXECUTE_REQ];
+    required int64 dealId = 2; // ID of the Manual Deal
+    required int64 price = 3; // Price of the Deal
+}
+
+// Response for ProtoManualDealExecuteReq
+message ProtoManualDealExecuteRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_EXECUTE_RES];
+}
+
+// Event that is sent when Manual Deal processing is finished
+message ProtoManualDealProcessedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANUAL_DEAL_PROCESSED_EVENT];
+    required int64 dealId = 2; // ID of the Manual Deal
+}
+
+// Request to created/update/delete Max AutoExecution Size Profile. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudMaxAutoExecutionSizeProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_MAX_AUTO_EXECUTION_SIZE_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Created/update_diff/delete operation. Update_diff means that only changed parameters are sent in request (other parameters stay unchanged)
+    required ProtoMaxAutoExecutionSizeProfile profile = 3; // Max AutoExecution Size Profile entity, containing settings for maxAutoExecutionSize for Symbol
+}
+
+// Response for ProtoCrudMaxAutoExecutionSizeProfileReq
+message ProtoCrudMaxAutoExecutionSizeProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_MAX_AUTO_EXECUTION_SIZE_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Created/update_diff/delete operation
+    required int64 profileId = 3; // Modified Profile's ID
+}
+
+// Event that is sent when Max AutoExecution Size Profile is created/updated/deleted. Profile is a set of settings which is applied within specific Groups
+message ProtoMaxAutoExecutionSizeProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_MAX_AUTO_EXECUTION_SIZE_PROFILE_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Created/update_diff/delete operation. Update_diff means that only changed parameters are sent in request (other parameters stay unchanged)
+    required ProtoMaxAutoExecutionSizeProfile profile = 3; // Modified AutoExecution Size Profile entity
+}
+
+// Request to get list of Max AutoExecution Size Profiles. Profile is a set of settings which is applied within specific Groups
+message ProtoMaxAutoExecutionSizeProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_MAX_AUTO_EXECUTION_SIZE_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoMaxAutoExecutionSizeProfileListReq
+message ProtoMaxAutoExecutionSizeProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_MAX_AUTO_EXECUTION_SIZE_PROFILE_LIST_RES];
+    repeated ProtoMaxAutoExecutionSizeProfile profile = 2; // List of Max AutoExecution Size Profiles
+}
+
+// Request to create a new Order
+message ProtoDealerNewOrderReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DEALER_NEW_ORDER_REQ];
+    required uint64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 symbolId = 3; // The unique identifier of the Symbol in specific server environment within cTrader platform
+    required ProtoOrderType orderType = 4; // The type of an Order - MARKET, LIMIT, STOP, MARKET_RANGE, STOP_LIMIT
+    required ProtoTradeSide tradeSide = 5; // The trade direction - BUY or SELL
+    required int64 volume = 6; // The volume represented in 0.01 of a unit (e.g. US$ 10.00 = 1000)
+    optional double limitPrice = 7; // The limit price, can be specified for the LIMIT Order only
+    optional double stopPrice = 8; // The stop price, can be specified for the STOP and the STOP_LIMIT Orders only
+    optional ProtoTimeInForce timeInForce = 9 [default = GOOD_TILL_CANCEL]; // The specific Order execution or expiration instruction - GOOD_TILL_DATE, GOOD_TILL_CANCEL, IMMEDIATE_OR_CANCEL, FILL_OR_KILL, MARKET_ON_OPEN. Default: GOOD_TILL_CANCEL
+    optional int64 expirationTimestamp = 10; // UNIX timestamp in milliseconds or the Order expiration. Should be set for the Good Till Date Orders
+    optional double stopLoss = 12; // The absolute Stop Loss price (1.23456 for example). Not supported for the MARKER Orders
+    optional double takeProfit = 13; // The absolute Take Profit price (1.23456 for example). Unsupported for the MARKER Orders
+    optional string comment = 14; // User-specified comment. MaxLength = 512
+    optional string method = 15; // Technical field - to be filled with "ManagerAPI"
+    optional double baseSlippagePrice = 16; // Base price to calculate relative slippage price for MARKET_RANGE Order
+    optional string label = 18; // User-specified label. MaxLength = 100
+    optional string channel = 19; // Technical field - to be filled with "ManagerAPI"
+    optional int64 positionId = 20; // Reference to the existing Position if the Order is intended to modify it
+    optional string clientOrderId = 21; // Optional user-specific clientOrderId (similar to FIX ClOrderID). MaxLength = 50
+    optional string clientToken = 22; // Deprecated field, should not be used
+    optional int64 relativeStopLoss = 23; // Relative Stop Loss that can be specified instead of the absolute as one. Specified in 1/100000 of unit of a price. For BUY stopLoss = entryPrice - relativeStopLoss, for SELL stopLoss = entryPrice + relativeStopLoss
+    optional int64 relativeTakeProfit = 24; // Relative Take Profit that can be specified instead of the absolute one. Specified in 1/100000 of unit of a price. For BUY takeProfit = entryPrice + relativeTakeProfit, for SELL takeProfit = entryPrice - relativeTakeProfit
+    optional int64 stake = 25; // Stake for Spread Betting
+    optional double desiredVWAP = 26; // Price desired by the client as an execution price
+    optional bool guaranteedStopLoss = 27; // If TRUE then the Stop Loss is guaranteed. Available for the French Risk or the Guaranteed Stop Loss Accounts
+    optional bool checkTolerance = 28; // If TRUE then tolerance check is applied and Order may be rejected due to significant price change. Applied only for B-book Orders
+    optional bool ignoreValidation = 29; // If TRUE then a lot of server validations should be skipped: Symbol and Trader restrictions (market is closed, short selling disabled, account is disabled, GSL is not allowed, min\max volume, protection distances, etc.)
+    optional bool trailingStopLoss = 30; // If TRUE then the Trailing Stop Loss is applied
+    optional ProtoOrderTriggerMethod stopTriggerMethod = 31 [default = TRADE]; // Trigger method for the STOP or the STOP_LIMIT pending Order
+    optional ProtoOrderTriggerMethod stopLossTriggerMethod = 32 [default = TRADE]; // Stop trigger method for SL/TP Order
+    optional int32 slippageInPoints = 33; // Slippage Distance for MARKET_RANGE and STOP_LIMIT Order
+    optional int64 desiredOpenTimestamp = 34; // UNIX timestamp in milliseconds used to set time of the opening for MARKET_ON_OPEN Orders
+}
+
+// Request to amend an Order
+message ProtoDealerAmendOrderReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DEALER_AMEND_ORDER_REQ];
+    required bool ignoreValidation = 2; // If TRUE then a lot of server validations should be skipped: Symbol and Trader restrictions (market is closed, short selling disabled, account is disabled, GSL is not allowed, min\max volume, protection distances, etc.)
+    required uint64 traderId = 3; // Unique identifier of the Trader within environment
+    required int64 orderId = 4; // The unique ID of the Order
+    optional ProtoTimeInForce timeInForce = 5 [default = GOOD_TILL_CANCEL]; // The specific Order execution or expiration instruction - GOOD_TILL_DATE, GOOD_TILL_CANCEL, IMMEDIATE_OR_CANCEL, FILL_OR_KILL, MARKET_ON_OPEN. Default: GOOD_TILL_CANCEL
+    optional double limitPrice = 6; // The limit price, can be specified for the LIMIT Order only
+    optional double stopPrice = 7; // The stop price, can be specified for the STOP and the STOP_LIMIT Orders only
+    optional int64 expirationTimestamp = 8; // UNIX timestamp in milliseconds of the Order expiration time. Should be set for the Good Till Date Orders
+    optional double stopLoss = 10; // The absolute Stop Loss price (1.23456 for example). Not supported for the MARKER Orders
+    optional double takeProfit = 11; // The absolute Take Profit price (1.23456 for example). Unsupported for the MARKER Orders
+    optional string channel = 15; // Technical field - to be filled with "ManagerAPI"
+    optional int64 relativeStopLoss = 16; // Relative Stop Loss that can be specified instead of the absolute as one. Specified in 1/100000 of unit of a price. For BUY stopLoss = entryPrice - relativeStopLoss, for SELL stopLoss = entryPrice + relativeStopLoss
+    optional int64 relativeTakeProfit = 17; // Relative Take Profit that can be specified instead of the absolute one. Specified in 1/100000 of unit of a price. For BUY takeProfit = entryPrice + relativeTakeProfit, for SELL takeProfit = entryPrice - relativeTakeProfit
+    optional int64 volume = 18; // The volume represented in 0.01 of a unit (e.g. US$ 10.00 = 1000)
+    optional bool guaranteedStopLoss = 19; // If TRUE then the Stop Loss is Guaranteed. Available for the French Risk or the Guaranteed Stop Loss Accounts
+    optional int64 stake = 20; // Stake for Spread Betting
+    optional bool trailingStopLoss = 21; // If TRUE then the Trailing Stop Loss is applied
+    optional ProtoOrderTriggerMethod stopTriggerMethod = 22 [default = TRADE]; // Trigger Method for the STOP or the STOP_LIMIT pending Order
+    optional ProtoOrderTriggerMethod stopLossTriggerMethod = 23 [default = TRADE]; // Stop Trigger Method for SL/TP Order
+    optional int32 slippageInPoints = 24; // Slippage Distance for MARKET_RANGE and STOP_LIMIT Order
+    optional int64 desiredOpenTimestamp = 25; // UNIX timestamp in milliseconds used to set time of the opening for MARKET_ON_OPEN Orders
+}
+
+// Request to cancel an Order
+message ProtoDealerCancelOrderReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DEALER_CANCEL_ORDER_REQ];
+    required bool ignoreValidation = 2; // If TRUE then a lot of server validations should be skipped: Symbol and Trader restrictions (market is closed, short selling disabled, account is disabled, GSL is not allowed, min\max volume, protection distances, etc.)
+    required uint64 traderId = 3; // Unique identifier of the Trader within environment
+    required int64 orderId = 4; // The unique ID of the Order
+}
+
+// Request to amend Position
+message ProtoDealerAmendPositionReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DEALER_AMEND_POSITION_REQ];
+    required bool ignoreValidation = 2; // If TRUE then a lot of server validations should be skipped: Symbol and Trader restrictions (market is closed, short selling disabled, account is disabled, GSL is not allowed, min\max volume, protection distances, etc.)
+    required uint64 traderId = 3; // Unique identifier of the Trader within environment
+    required int64 positionId = 4; // The unique ID of the Position
+    optional double stopLoss = 5; // The absolute Stop Loss price (1.23456 for example). Not supported for the MARKER Orders
+    optional double takeProfit = 6; // The absolute Take Profit price (1.23456 for example). Unsupported for the MARKER Orders
+    optional string channel = 7; // Technical field - to be filled with "ManagerAPI"
+    optional bool guaranteedStopLoss = 8; // If TRUE then the Stop Loss is Guaranteed. Available for the French Risk or the Guaranteed Stop Loss Accounts
+    optional bool trailingStopLoss = 9; // If TRUE then the Trailing Stop Loss is applied
+    optional ProtoOrderTriggerMethod stopLossTriggerMethod = 10 [default = TRADE]; // Stop trigger method for SL/TP Order
+}
+
+// Request to close Position
+message ProtoDealerClosePositionReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DEALER_CLOSE_POSITION_REQ];
+    required bool ignoreValidation = 2; // If TRUE then a lot of server validations should be skipped: Symbol and Trader restrictions (market is closed, short selling disabled, account is disabled, GSL is not allowed, min\max volume, protection distances, etc.)
+    required uint64 traderId = 3; // Unique identifier of the Trader within environment
+    required int64 positionId = 4; // The unique ID of the Position
+    required int64 volume = 5; // The volume represented in 0.01 of a unit (e.g. US$ 10.00 = 1000)
+    optional int64 stake = 6; // Stake for Spread Betting
+    optional string channel = 7; // Technical field - to be filled with "ManagerAPI"
+    optional double desiredVWAP = 8; // Price desired by the client as an execution price
+}
+
+// Event that is sent when Asset Class is created/updated
+message ProtoAssetClassChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ASSET_CLASS_CHANGED_EVENT];
+    required ProtoAssetClass assetClass = 2; // Asset class entity
+    required ProtoCrudOperation operation = 3; // Create/update operation
+}
+
+// Event that is sent when Asset Class is deleted
+message ProtoAssetClassDeletedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_ASSET_CLASS_DELETED_EVENT];
+    required int64 assetClassId = 2; // Asset class ID
+}
+
+// Event that is sent when Symbol Category is created/updated
+message ProtoSymbolCategoryChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SYMBOL_CATEGORY_CHANGED_EVENT];
+    required ProtoSymbolCategory symbolCategory = 2; // Symbol Category
+    required ProtoCrudOperation operation = 3; // Create/update operation
+}
+
+// Event that is sent when Symbol Category is deleted
+message ProtoSymbolCategoryDeletedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SYMBOL_CATEGORY_DELETED_EVENT];
+    required int64 symbolCategoryId = 2; // Symbol Category ID
+}
+
+// Request to force close Position even when it is impossible to do it "legally" (LP stopped streaming, Position was not closed, but should be, etc.)
+message ProtoForceClosePositionReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_FORCE_CLOSE_POSITION_REQ];
+    required int64 positionId = 2; // The unique ID of the Position
+    required double desiredVWAP = 3; // Price desired by the client as an execution price
+    optional string comment = 4; // Comment which was set for the Deal
+    optional string channel = 5; // Technical field - to be filled with "ManagerAPI"
+}
+
+// Request to force open Position even when it is impossible to do it "legally" (LP stopped streaming, Position was not opened, but should be, etc.)
+message ProtoForceOpenPositionReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_FORCE_OPEN_POSITION_REQ];
+    required int64 traderId = 2; // Unique identifier of the Trader within environment
+    required int64 symbolId = 3; // The unique identifier of the Symbol in specific server environment within cTrader platform
+    required ProtoTradeSide tradeSide = 4; // The trade direction - BUY or SELL
+    required int64 volume = 5; // The volume represented in 0.01 of a unit (e.g. US$ 10.00 = 1000)
+    required double desiredVWAP = 6; // Price desired by the client as an execution price
+    optional int64 unrealizedSwaps = 7; // Unrealised Swap to be set for the created Position
+    optional uint64 usedMargin = 8; // Required margin for the Position (will be auto calculated if unspecified)
+    optional string comment = 9; // Comment for the Deal
+    optional string channel = 10; // Technical field - to be filled with "ManagerAPI"
+    optional double stopLoss = 11; // The absolute Stop Loss price (1.23456 for example). Not supported for the MARKER Orders
+    optional bool chargeCommission = 12; // If false then applicable trading commission is not charged
+    optional bool newWay = 13; // Must be set to TRUE. If TRUE then for amount protocol value 1 is minimal value according to ProtoAsset.digits (=1/(10^digits)), e.g. if Trader's deposit Asset is JPY (digits=0), then value 1 equals to 1.00 JPY; if USD (digits=2) then 1 equals to 0.01 USD. If FALSE, then 1 protocol value=0.01
+}
+
+// Request to transfer funds between Traders
+message ProtoManagerBalanceTransferReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_BALANCE_TRANSFER_REQ];
+    required int64 fromTraderId = 2; // ID of the Trader to transfer from
+    required int64 toTraderId = 3; // ID of the Trader to transfer to
+    required int64 amount = 4; // Amount of the transfer in 10^Asset.digits
+    optional double conversionRate = 5; // Conversion rate for the case when fromTraderId and toTraderId Traders' deposit Assets are different
+    optional bool newWay = 6; // Must be set to TRUE. If TRUE then for amount protocol value 1 is minimal value according to ProtoAsset.digits (=1/(10^digits)), e.g. if Trader's deposit Asset is JPY (digits=0), then value 1 equals to 1.00 JPY; if USD (digits=2) then 1 equals to 0.01 USD. If FALSE, then 1 protocol value=0.01
+    optional string commentForFromTrader = 7; // Comment which will be set for the fromTraderId
+    optional string commentForToTrader = 8; // Comment which will be set for the toTraderId
+}
+
+// Response for ProtoManagerBalanceTransferReq
+message ProtoManagerBalanceTransferRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_BALANCE_TRANSFER_RES];
+    required uint64 depositedAmount = 2;
+    optional uint32 moneyDigits = 3; // Specifies the exponent of the monetary values. E.g. moneyDigits = 8 must be interpret as business value multiplied by 10^8, then real value would be 10053099944 / 10^8 = 100.53099944. Affects depositedAmount
+}
+
+// Request to create/update/delete profile for changing Symbol trading Schedule. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudScheduleProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_SCHEDULE_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoScheduleProfile scheduleProfile = 3; // Symbol Trading Schedule Profile entity
+}
+
+// Response for ProtoCrudScheduleProfileReq
+message ProtoCrudScheduleProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_SCHEDULE_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 scheduleProfileId = 3; // Symbol Trading Schedule Profile ID
+}
+
+// Event that is sent when Symbol trading Schedule is created/updated/deleted. Profile is a set of settings which is applied within specific Groups
+message ProtoScheduleProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SCHEDULE_PROFILE_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoScheduleProfile scheduleProfile = 3; // Symbol Trading Schedule Profile entity
+}
+
+// Request to get list of Symbol Trading Schedule Profiles. Profile is a set of settings which is applied within specific Groups
+message ProtoScheduleProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SCHEDULE_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoScheduleProfileListReq
+message ProtoScheduleProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SCHEDULE_PROFILE_LIST_RES];
+    repeated ProtoScheduleProfile scheduleProfile = 2; // List Symbol Trading Schedule Profiles
+}
+
+// Request to create/update/delete Commission Profile. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudCommissionProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_COMMISSION_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoCommissionProfile commissionProfile = 3; // Commission Profile entity
+}
+
+// Response for ProtoCrudCommissionProfileReq
+message ProtoCrudCommissionProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_COMMISSION_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 commissionProfileId = 3; // Commission Profile ID
+}
+
+// Event that is sent when Commission Profile is changed
+message ProtoCommissionProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_COMMISSION_PROFILE_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoCommissionProfile commissionProfile = 3; // Commission Profile entity
+}
+
+// Request to get list of Commission Profiles
+message ProtoCommissionProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_COMMISSION_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoCommissionProfileListReq
+message ProtoCommissionProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_COMMISSION_PROFILE_LIST_RES];
+    repeated ProtoCommissionProfile commissionProfile = 2; // Commission Profile entities
+}
+
+// Request to create/update/delete Volume Profiles. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudVolumeProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_VOLUME_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoVolumeProfile volumeProfile = 3; // Volume Profile entity
+}
+
+// Response for ProtoCrudVolumeProfileReq
+message ProtoCrudVolumeProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_VOLUME_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 volumeProfileId = 3; // Volume Profile ID
+}
+
+// Event that is sent when Volume Profile is updated/created/deleted. Profile is a set of settings which is applied within specific Groups
+message ProtoVolumeProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_VOLUME_PROFILE_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoVolumeProfile volumeProfile = 3; // Volume Profile entity
+}
+
+// Request to get list of Volume Profiles
+message ProtoVolumeProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_VOLUME_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoVolumeProfileListReq
+message ProtoVolumeProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_VOLUME_PROFILE_LIST_RES];
+    repeated ProtoVolumeProfile volumeProfile = 2; // Volume Profile entities
+}
+
+// Request to create/update/delete Execution Profiles. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudExecutionProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_EXECUTION_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoExecutionProfile executionProfile = 3; // Execution Profile entity
+}
+
+// Response for ProtoCrudExecutionProfileReq
+message ProtoCrudExecutionProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_EXECUTION_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Execution Profile entity
+    required int64 executionProfileId = 3; // Execution Profile ID
+}
+
+// Event that is sent when Execution Profile is updated/created/deleted
+message ProtoExecutionProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_EXECUTION_PROFILE_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoExecutionProfile executionProfile = 3; // Execution Profile entity
+}
+
+// Request to get list of Execution Profiles
+message ProtoExecutionProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_EXECUTION_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoExecutionProfileListReq
+message ProtoExecutionProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_EXECUTION_PROFILE_LIST_RES];
+    repeated ProtoExecutionProfile executionProfile = 2; // Execution Profile entities
+}
+
+// Request to create/update/delete Protection Profiles. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudProtectionProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_PROTECTION_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoProtectionProfile protectionProfile = 3; // Execution Profile entity
+}
+
+// Response for ProtoCrudProtectionProfileReq
+message ProtoCrudProtectionProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_PROTECTION_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 protectionProfileId = 3; // Execution Profile ID
+}
+
+// Event that is sent when Protection Profile updated/created/deleted
+message ProtoProtectionProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PROTECTION_PROFILE_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoProtectionProfile protectionProfile = 3; // Protection Profile entity
+}
+
+// Request to get list of Protection Profiles
+message ProtoProtectionProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PROTECTION_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoProtectionProfileListReq
+message ProtoProtectionProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_PROTECTION_PROFILE_LIST_RES];
+    repeated ProtoProtectionProfile protectionProfile = 2; // Protection Profile entities
+}
+
+// Request to create/update/delete Swap Free (Administrative Fee) Profiles which can be used instead of Swap Profile. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudSwapFreeProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_SWAP_FREE_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoSwapFreeProfile swapFreeProfile = 3; // Swap Free Profile entity
+}
+
+// Response for ProtoCrudSwapFreeProfileReq
+message ProtoCrudSwapFreeProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_SWAP_FREE_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 swapFreeProfileId = 3; // Swap Free Profile ID
+}
+
+// Event that is sent when Swap Free (Administrative Fee) Profile updated/created/deleted
+message ProtoSwapFreeProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SWAP_FREE_PROFILE_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoSwapFreeProfile swapFreeProfile = 3; // Swap Free Profile entity
+}
+
+// Request to get list of Swap Free Profiles
+message ProtoSwapFreeProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SWAP_FREE_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoSwapFreeProfileListReq
+message ProtoSwapFreeProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SWAP_FREE_PROFILE_LIST_RES];
+    repeated ProtoSwapFreeProfile swapFreeProfile = 2; // Swap Free Profile entities
+}
+
+// Request to get create/update/delete Holiday. Holiday is a date when trading is stopped
+message ProtoCrudHolidayReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_HOLIDAY_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoHoliday holiday = 3; // Holiday entity
+}
+
+// Response for ProtoCrudHolidayReq
+message ProtoCrudHolidayRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_HOLIDAY_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 holidayId = 3; // Holiday ID
+}
+
+// Event that is sent when Holiday is updated/created/deleted
+message ProtoHolidayChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_HOLIDAY_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoHoliday holiday = 3; // Holiday entity
+}
+
+// Request to get list Holidays
+message ProtoHolidayListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_HOLIDAY_LIST_REQ];
+}
+
+// Response for ProtoHolidayListReq
+message ProtoHolidayListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_HOLIDAY_LIST_RES];
+    repeated ProtoHoliday holiday = 2; // Holiday entities
+}
+
+// Request to get create/update/delete Holiday Profile. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudHolidayProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_HOLIDAY_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoHolidayProfile holidayProfile = 3; // Holiday Profile entity
+}
+
+// Response for ProtoCrudHolidayProfileReq
+message ProtoCrudHolidayProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_HOLIDAY_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 holidayProfileId = 3; // Holiday Profile id
+}
+
+// Event that is sent when Holiday Profile is updated/created/deleted
+message ProtoHolidayProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_HOLIDAY_PROFILE_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoHolidayProfile holidayProfile = 3; // Holiday Profile entity
+}
+
+// Request to get list Holiday Profiles
+message ProtoHolidayProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_HOLIDAY_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoHolidayProfileListReq
+message ProtoHolidayProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_HOLIDAY_PROFILE_LIST_RES];
+    repeated ProtoHolidayProfile holidayProfile = 2; // Holiday Profile entities
+}
+
+// Request to get list liquidity Feeds connected to Symbols
+message ProtoLiquidityFeedSymbolListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIQUIDITY_FEED_SYMBOL_LIST_REQ];
+}
+
+// Response for ProtoLiquidityFeedSymbolListReq
+message ProtoLiquidityFeedSymbolListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIQUIDITY_FEED_SYMBOL_LIST_RES];
+    repeated ProtoLiquidityFeedSymbol liquidityFeedSymbol = 2; // Liquidity Feeds for Symbols
+}
+
+// Request to create Symbol
+message ProtoCreateSymbolReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CREATE_SYMBOL_REQ];
+    required string name = 2; // Symbol name
+    required int32 digits = 3; // Number of digits after comma in the price
+    required int32 pipPosition = 4; // Specifies digit which is used for determining pip Position
+    optional string description = 5; // Description for the Symbol
+    optional string measurementUnits = 6; // OZ (ounces), BBL (barrels), BTU (British thermal units), etc.
+    required ProtoTradingMode tradingMode = 7; // Specified trading mode for the Symbol that limits scope of trading operations Default: TRADING_MODE_ENABLED
+    required int64 lotSize = 8; // Amount of units of the base Asset in one lot
+    required int64 symbolCategoryId = 9; // ID of the Symbol Category where Symbol is located
+    required int64 baseAssetId = 10; // ID of the base Asset
+    required int64 quoteAssetId = 11; // ID of the quote Asset
+    required int64 defaultVolumeProfileId = 12; // Default Volume Profile for Symbol
+    required int64 defaultCommissionProfileId = 13; // Default Commission Profile for Symbol
+    required int64 defaultExecutionProfileId = 14; // Default Execution Profile for Symbol
+    required int64 defaultLeverageId = 15; // Default Leverage Profile for Symbol
+    required int64 defaultProtectionProfileId = 16; // Default Protection Profile for Symbol
+    required int64 defaultSwapFreeProfileId = 17; // Default Swap Free Profile profile for Symbol
+    required int64 defaultGSLScheduleId = 18; // Default GSL Schedule Profile for Symbol
+    required int64 scheduleProfileId = 19; // Default Trading Schedule Profile for Symbol
+    required uint32 priceLiquidityFeedId = 20; // Default Price Liquidity Feed for Symbol
+    required uint32 tradeLiquidityFeedId = 21; // Default Trade Liquidity Feed for Symbol
+    required int64 holidayProfileId = 22; // Holiday Profile for Symbol
+    optional ProtoFuturesSettings futuresSettings = 23; // Futures settings for Symbol
+    required int64 defaultTradeNotificationProfileId = 24; // Default trade Notification Profile for Symbol
+    optional int32 bidMarkUp = 25; // in pipettes
+    optional int32 askMarkUp = 26; // in pipettes
+    optional double defaultSwapLong = 27; // Swap in pips per 100K for long positions
+    optional double defaultSwapShort = 28; // Swap in pips per 100K for short positions
+    optional int32 defaultSwapTime = 29; // Time in minutes from 00:00 (UTC) from which Swap Period is calculated
+    optional int32 defaultSwapPeriod = 30; // Swap is calculated every Swap Period (in hours)
+    optional int32 defaultSkipSWAPPeriods = 31; // Number of skipped Swap periods after the opening of the Position
+    optional bool defaultChargeSwapAtWeekends = 32; // If TRUE - Swap will also be charged at weekends
+    optional ProtoDayOfWeek defaultSwapRollover3Days = 33 [default = WEDNESDAY]; // Day of the week when SWAP charge amount will be tripled. Doesn't impact rollover commission
+}
+
+// Response for ProtoCreateSymbolReq
+message ProtoCreateSymbolRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CREATE_SYMBOL_RES];
+    required int64 symbolId = 2; // The unique identifier of the Symbol in specific server environment within cTrader platform
+}
+
+// Event that is sent when Symbol becomes archived
+message ProtoSymbolArchivedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SYMBOL_ARCHIVED_EVENT];
+    required int64 symbolId = 2; // The unique identifier of the Symbol in specific server environment within cTrader platform
+}
+
+// Event that is sent when Symbol becomes restored (from archived status back to active)
+message ProtoSymbolRestoredEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SYMBOL_RESTORED_EVENT];
+    required ProtoManagerSymbol symbol = 2; // Symbol entity
+}
+
+// Request to get list Swap Profiles (with limited number of fields)
+message ProtoLightSwapAndDividendProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIGHT_SWAP_AND_DIVIDEND_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoLightSwapAndDividendProfileListReq
+message ProtoLightSwapAndDividendProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIGHT_SWAP_AND_DIVIDEND_PROFILE_LIST_RES];
+    repeated ProtoLightSwapAndDividendProfile swapAndDividendProfile = 2; // Swap And Dividend Profile entities (with limited number of fields)
+}
+
+// Request to get Swap and Dividend Profile by id
+message ProtoSwapAndDividendProfileByIdReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SWAP_AND_DIVIDEND_PROFILE_BY_ID_REQ];
+    required int64 swapAndDividendProfileId = 2; // Swap And Dividend Profile ID
+}
+
+// Response for ProtoSwapAndDividendProfileByIdReq
+message ProtoSwapAndDividendProfileByIdRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SWAP_AND_DIVIDEND_PROFILE_BY_ID_RES];
+    required ProtoSwapAndDividendProfile swapAndDividendProfile = 2; // Swap And Dividend Profile entity
+}
+
+// Request to get Manager by id
+message ProtoManagerByIdReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_BY_ID_REQ];
+    required int64 managerId = 2; // ID of the Manager
+}
+
+// Response for ProtoManagerByIdReq
+message ProtoManagerByIdRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_BY_ID_RES];
+    required ProtoManager manager = 2; // Manager entity
+}
+
+// Request to create/update/delete trade Notification Profile. Profile is a set of settings which is applied within specific Groups
+message ProtoCrudTradeNotificationProfileReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_TRADE_NOTIFICATION_PROFILE_REQ];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoTradeNotificationProfile tradeNotificationProfile = 3; // Trade Notification Profile entity
+}
+
+// Response for ProtoCrudTradeNotificationProfileReq
+message ProtoCrudTradeNotificationProfileRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_TRADE_NOTIFICATION_PROFILE_RES];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required int64 tradeNotificationProfileId = 3; // Trade Notification Profile ID
+}
+
+// Event that is sent when trade Notification Profile is created/update/deleted
+message ProtoTradeNotificationProfileChangedEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_TRADE_NOTIFICATION_PROFILE_CHANGED_EVENT];
+    required ProtoCrudOperation operation = 2; // Create/update/delete operation
+    required ProtoTradeNotificationProfile tradeNotificationProfile = 3; // Trade Notification Profile entity
+}
+
+// Request to get list of trade Notification Profiles
+message ProtoTradeNotificationProfileListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_TRADE_NOTIFICATION_PROFILE_LIST_REQ];
+}
+
+// Response for ProtoTradeNotificationProfileListReq
+message ProtoTradeNotificationProfileListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_CRUD_TRADE_NOTIFICATION_PROFILE_LIST_RES];
+    repeated ProtoTradeNotificationProfile tradeNotificationProfile = 2; // Trade Notification Profile entities
+}
+
+// Request to get list of Traders (with limited number of fields), filtered by registrationTimestamp
+message ProtoManagerLightTraderListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_LIGHT_TRADER_LIST_REQ];
+    required int64 fromTimestamp = 2; // UNIX timestamp in milliseconds from which the search starts
+    required int64 toTimestamp = 3; // UNIX timestamp in milliseconds where to stop searching
+    optional int64 groupId = 4; // ID of the Traders Group
+}
+
+// Response for ProtoManagerLightTraderListReq
+message ProtoManagerLightTraderListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_LIGHT_TRADER_LIST_RES];
+    repeated ProtoManagerLightTrader trader = 2; // Trader entities ordered by registrationTimestamp (newest first)
+    required bool hasMore = 3; // If TRUE then the number of entities by filter is larger than internal chunk size, the response contains the number of entities that is equal to chunk size
+}
+
+// Request to subscribe to quotes. Subscriber starts receiving ProtoSpotEvents
+message ProtoSubscribeSpotQuotesReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SUBSCRIBE_SPOT_QUOTES_REQ];
+    repeated int64 symbolId = 3; // The unique identifier of the Symbol in specific server environment within cTrader platform
+    optional bool subscribeToSpotTimestamp = 5; // If TRUE then ProtoSpotEvent will contain timestamp
+}
+
+// Response for ProtoSubscribeSpotQuotesReq
+message ProtoSubscribeSpotQuotesRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SUBSCRIBE_SPOT_QUOTES_RES];
+}
+
+// Request to stop subscription to quotes. Subscriber stops receiving ProtoSpotEvents
+message ProtoUnsubscribeSpotQuotesReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_UNSUBSCRIBE_SPOT_QUOTES_REQ];
+    repeated int64 symbolId = 3; // The unique identifier of the Symbol in specific server environment within cTrader platform
+}
+
+// Response for ProtoUnsubscribeSpotQuotesReq
+message ProtoUnsubscribeSpotQuotesRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_UNSUBSCRIBE_SPOT_QUOTES_RES];
+}
+
+// Event that is sent when a new spot event is generated on the server side
+// Requires subscription on the spot events, see ProtoSubscribeSpotQuotesReq
+// First event, received after subscription will contain latest spot prices even if market is closed
+message ProtoSpotEvent {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_SPOT_EVENT];
+    required int64 symbolId = 2; // The unique identifier of the Symbol in specific server environment within cTrader platform
+    optional uint64 bid = 3; // Bid price. Specified in 1/100_000 of unit of a price (e.g. 1.23 -> 1_23000)
+    optional uint64 ask = 4; // Ask price. Specified in 1/100_000 of unit of a price (e.g. 1.23 -> 1_23000)
+    optional uint64 high = 5; // Highest current session price. Specified in 1/100_000 of unit of a price (e.g. 1.23 -> 1_23000)
+    optional uint64 low = 6; // Lowest current session price. Specified in 1/100_000 of unit of a price (e.g. 1.23 -> 1_23000)
+    optional uint64 sessionClose = 7; // Last session close. Specified in 1/100_000 of unit of a price (e.g. 1.23 -> 1_23000)
+    optional int64 timestamp = 9; // UNIX timestamp in milliseconds for spot
+}
+
+// Request to get historic trend bars
+message ProtoTrendbarListReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRENDBAR_LIST_REQ];
+    required int64 symbolId = 2; // Id of the symbol
+    required ProtoTimeframe period = 3; // Trend bars' period
+    optional int64 fromTimestamp = 4; // UNIX timestamp in milliseconds from which the search starts
+    optional int64 toTimestamp = 5; // UNIX timestamp in milliseconds where to stop searching
+    optional uint32 count = 6; // Limit number of trend bars in response starting from toTimestamp
+    optional ProtoTrendbarType type = 7 [default = REGULAR_OHLC]; // Type of trend bars
+}
+
+// Response to ProtoTrendbarListReq
+message ProtoTrendbarListRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_TRENDBAR_LIST_RES];
+    repeated ProtoTrendbar trendbar = 2; // Trend bar data
+    optional ProtoTrendbarType type = 3; // Trend bar type
+}
+
+// Request for adding or replacing trend bar. Existing bars will be replaced. Invalid records will be rejected
+message ProtoInsertTrendbarReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_INSERT_TRENDBAR_REQ];
+    required int64 symbolId = 2; // Id of the symbol
+    required ProtoTimeframe timeframe = 3; // Trend bar timeframe
+    repeated ProtoInsertTrendbar trendbar = 4; // Trend bar which is being inserted
+}
+
+// Response for ProtoInsertTrendbarReq containing rejected invalid records
+message ProtoInsertTrendbarRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_INSERT_TRENDBAR_RES];
+    repeated ProtoInsertTrendbarError error = 2; // The list of chart bars which were not saved due to errors
+}
+
+// Request for rebuilding trend bars - calculate and save higher timeframe trend bars based on the lower trend bars
+message ProtoRebuildTrendbarsReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_REBUILD_TRENDBARS_REQ];
+    required uint64 symbolId = 2; // Id of the symbol
+    required ProtoTrendbarPeriod recalculateFromPeriod = 3; // Period which will be used for calculation
+    required uint64 fromTimestamp = 4; // UNIX timestamp in milliseconds, starting from which trend bars will be recalculated
+    required uint64 toTimestamp= 5; // UNIX timestamp in milliseconds, up to which trends bars will be recalculated
+}
+
+// Response for ProtoRebuildTrendbarsReq
+message ProtoRebuildTrendbarsRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_REBUILD_TRENDBARS_RES];
+}
+
+// Request to delete trend bars
+message ProtoDeleteTrendbarReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DELETE_TRENDBAR_REQ];
+    required int64 symbolId = 2; // Id of the symbol
+    required ProtoTimeframe timeframe = 3; // Trend bar timeframe
+    repeated int64 timestamp = 4; // Timestamp for which trend bar will be deleted
+}
+
+// Response for ProtoDeleteTrendbarReq
+message ProtoDeleteTrendbarRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_DELETE_TRENDBAR_RES];
+}
+
+// Request for the status of Liquidity Feed
+message ProtoLiquidityFeedStatusReq {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIQUIDITY_FEED_STATUS_REQ];
+    required int64 liquidityFeedId = 2; // ID of Liquidity Feed
+}
+
+// Response for ProtoLiquidityFeedStatusReq
+message ProtoLiquidityFeedStatusRes {
+    optional ProtoCSPayloadType payloadType = 1 [default = PROTO_LIQUIDITY_FEED_STATUS_RES];
+    required bool pricingLoggedOn = 2; // Equals TRUE if the pricing connection is active (FIX heartbeats are received)
+    required bool pricingEnabled = 3; // Equals TRUE if this feed is used for pricing
+    required bool tradingLoggedOn = 4; // Equals TRUE if the trading connection is active (FIX heartbeats are received)
+    required bool tradingEnabled = 5; // Equals TRUE if this feed is used for trading
+    required int64 statusTimestamp = 6; // The timestamp of the moment when status was last checked
+}
