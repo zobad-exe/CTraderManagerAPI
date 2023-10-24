@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManagerAPI\\CTraderManagerAPI.csproj": {}
+    "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManager_API\\CTraderManagerAPI\\CTraderManagerAPI.csproj": {}
   },
   "projects": {
-    "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManagerAPI\\CTraderManagerAPI.csproj": {
+    "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManager_API\\CTraderManagerAPI\\CTraderManagerAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManagerAPI\\CTraderManagerAPI.csproj",
+        "projectUniqueName": "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManager_API\\CTraderManagerAPI\\CTraderManagerAPI.csproj",
         "projectName": "CTraderManagerAPI",
-        "projectPath": "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManagerAPI\\CTraderManagerAPI.csproj",
+        "projectPath": "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManager_API\\CTraderManagerAPI\\CTraderManagerAPI.csproj",
         "packagesPath": "C:\\Users\\Z\\.nuget\\packages\\",
-        "outputPath": "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManagerAPI\\obj\\",
+        "outputPath": "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManager_API\\CTraderManagerAPI\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -54,6 +54,14 @@
               "suppressParent": "All",
               "target": "Package",
               "version": "[2.58.0, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            },
+            "RabbitMQ.Client": {
+              "target": "Package",
+              "version": "[6.6.0, )"
             },
             "System.Reactive": {
               "target": "Package",

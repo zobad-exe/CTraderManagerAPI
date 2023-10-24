@@ -15,15 +15,25 @@ using System.Text;
 using System.Threading;
 using System.Security.Cryptography;
 using ProtoBuf;
+using RabbitMQ.Client;
+using Newtonsoft.Json;
+using CTraderManagerAPI.Model;
 
 namespace MyProject;
 class Program
 {
     //https://demo-rifx.webapi.ctrader.com:8443/webserv/
-    const string proxyHost = "demo.p.ctrader.com";
+    //const string proxyHost = "demo.p.ctrader.com";
+
+    private static IModel channel;
+    private static IConnection conn;
+    private static string mqURI = "amqp://guest:guest@localhost:5672";
+
+    const string proxyHost = "uat-demo.p.ctrader.com";
     const int proxyPort = 5011;
     const long login = 30142;
     const string password = "n4wlyF";
+    const string md5Hash = "658971d8379f7c170dc7e96c825da968";
     const string environment = "demo";
     const string plant = "chsandbox";
 
@@ -33,6 +43,8 @@ class Program
     static CancellationTokenSource _cancellationTokenSource=new();
     static DateTimeOffset LastSentMessageTime= DateTime.Now;
     static TimeSpan _heartbeatInterval = TimeSpan.FromSeconds(25);
+    static Dictionary<long, AccountsLite>  accountsDictionary = new Dictionary<long, AccountsLite>();   
+    static Dictionary<long, string>  symbolsDictionary = new Dictionary<long, string>();   
 
     private static Client _cclient;
     private  const int MANUAL = 0;
@@ -43,19 +55,27 @@ class Program
     {
         try
         {
-            
+            //MQ initialize
+            var factory = new ConnectionFactory
+            {
+                Uri = new Uri(mqURI)
+            };
+            conn = factory.CreateConnection();
+            channel = conn.CreateModel();
+            channel.ExchangeDeclare("ctrader-sandbox-exchange", ExchangeType.Direct);
 
             if (mode == AUTO) { 
                 _cclient = new Client(proxyHost, proxyPort, _heartbeatInterval);
                // _disposables.Add(_cclient.Subscribe(OnMessageReceived, OnException));
                 _disposables.Add(_cclient.Where(iMessage => iMessage is not ProtoHeartbeatEvent).Subscribe(OnMessageReceived, OnException));
-               _disposables.Add(_cclient.Where(iMessage => iMessage is ProtoHeartbeatEvent).Subscribe(OnHeartbatReceived, OnException));
+                _disposables.Add(_cclient.Where(iMessage => iMessage is ProtoHeartbeatEvent).Subscribe(OnHeartbatReceived, OnException));
+                _disposables.Add(_cclient.Where(iMessage => iMessage is ProtoTraderListRes).Subscribe(OnTradersReceived, OnException));
 
                 Console.WriteLine("Connecting Client...");
                 await _cclient.Connect();
                 Console.WriteLine("Client successfully connected");
                 Login();
-
+                
                 await Task.Delay(500);
 
             }
@@ -68,9 +88,10 @@ class Program
                 //ReadStream(_stream);
                 await RunInBackground(_heartbeatInterval, async ()=> await  SendHeartbeat());
                 //await SendHeartbeat();
-                Console.WriteLine("Hello, World!");
+                
             }
-            
+                Console.WriteLine("Hello, World!");
+                Console.ReadKey();
         }
         catch (Exception ex)
         {
@@ -78,17 +99,11 @@ class Program
         }
     }
     private static async void Login()
-    {
-        /*
-            optional ProtoCSPayloadType payloadType = 1 [default = PROTO_MANAGER_AUTH_REQ];
-            required string plantId = 2; // Identifier of the specific cServer instance
-            required string environmentName = 3; // Identifier of the environment
-            required int64 login = 4; // Login of the Manager
-            required string passwordHash = 5; // MD5-hash of Manager's password
-        */
+    {       
         Console.WriteLine("Logging in ....");
-        var hashedPass = CreateMD5(password);
-        Console.WriteLine($"{hashedPass}"); 
+        var hashedPass = CreateMD5(password).ToLower();
+        Console.WriteLine($"Autogen hash: {hashedPass}"); 
+        Console.WriteLine($"Manual hash: {md5Hash}"); 
         var applicationAuthReq = new ProtoManagerAuthReq()
         {
             PlantId = plant,
@@ -126,15 +141,172 @@ class Program
             // return sb.ToString();
         }
     }
+   
     private static void OnMessageReceived(IMessage message)
     {
-        Console.WriteLine($"\n{DateTime.Now}: Message Received:\n{message}");
-        Console.WriteLine();
+        var rawMsg = (ProtoMessage)message;
+        var payload =rawMsg.Payload;
+        var type = message.GetPayloadType();
+        if (type == (uint)ProtoCSPayloadType.ProtoTraderListRes)
+            OnTradersReceived(message);
+        if (type == (uint)ProtoCSPayloadType.ProtoManagerAuthRes)
+            OnLoginReceived(message);
+        if (type == (uint)ProtoCSPayloadType.ProtoManagerSymbolListRes)
+        {
+            OnSymbolsReceived(message);
+        }
+        if (type == (uint)ProtoCSPayloadType.ProtoExecutionEvent) {
+            OnExecutionMessageReceived(message);
+            /*Console.WriteLine("Trade Execution Event...");
+            var _msg = ProtoExecutionEvent.Parser.ParseFrom(rawMsg.Payload);
+            Console.WriteLine("Reply : " + _msg);
+            if(_msg.ExecutionType == ProtoExecutionType.OrderFilled)
+            {
+
+            }
+
+            var dto = new DealsDTO();
+            dto.platform = "CTRADER";
+            string dealId = _msg?.Deal?.DealId.ToString() ?? _msg?.Position?.PositionId.ToString() ??"0";
+            dto.dealId = int.Parse(dealId);
+            dto.positionId = (int)_msg?.Position?.PositionId;
+            dto.login = (int)_msg?.Order?.Login;
+            dto.traderId = (int)_msg?.Position?.TradeData?.TraderId ;
+            if (_msg.Position?.TradeData?.TradeSide == ProtoTradeSide.Buy)
+                dto.action = "0";
+            else if (_msg.Position?.TradeData?.TradeSide == ProtoTradeSide.Sell)
+                dto.action = "1";
+            if(_msg.Position?.PositionStatus == ProtoPositionStatus.PositionStatusOpen)
+                dto.entry = "0";
+            else if( _msg.Position?.PositionStatus == ProtoPositionStatus.PositionStatusClosed)
+                dto.entry = "1";             
+            dto.time = _msg.Position?.UtcLastUpdateTimestamp.ToString() ?? "";
+            dto.symbol = _msg.Position?.TradeData?.SymbolId.ToString() ?? "";
+            dto.volume = (int)_msg.Position?.TradeData?.Volume;
+            dto.rateProfit = "0";
+            dto.rateMargin = _msg.Position?.MarginRate.ToString() ?? "";
+            dto.comment =_msg.Position?.TradeData?.Comment ?? "";
+            dto.profit = 0;
+            dto.volumeClosed = 0;
+            dto.contractSize = 0;
+            dto.price = (double)_msg.Position?.Price;
+            dto.priceSL = _msg.Position.StopLoss;
+            dto.priceTP = _msg.Position.TakeProfit;
+
+            bool isOpen = (_msg.Position.PositionStatus == ProtoPositionStatus.PositionStatusOpen
+                        && _msg.Position.PositionStatus != ProtoPositionStatus.PositionStatusError
+                );
+
+            PublishRabbitMq(dto,isOpen );*/
+        }
+        //Console.WriteLine($"\n{DateTime.Now}: Message Received:\n{message}");
+        //Console.WriteLine();
+    }
+    private static void OnSymbolsReceived(IMessage message)
+    {
+        var rawMsg = (ProtoMessage)message;
+        if(message.GetPayloadType() == (uint)ProtoCSPayloadType.ProtoManagerSymbolListRes)
+        {
+            var msg = ProtoManagerSymbolListRes.Parser.ParseFrom(rawMsg.Payload);
+            Console.WriteLine($"\n{DateTime.Now}: Traders list Message Received:\n");
+            foreach(var symbol in msg.Symbol)
+            {
+                Console.WriteLine($"symbol: {symbol.Name} ID: {symbol.SymbolId}");
+                symbolsDictionary.TryAdd(key: symbol.SymbolId, value:symbol.Name );
+            }
+            Console.WriteLine();
+        }
+    }
+    private static void OnTradersReceived(IMessage message)
+    {
+        var rawMsg = (ProtoMessage)message;
+        if(message.GetPayloadType() == (uint)ProtoCSPayloadType.ProtoTraderListRes)
+        {
+            var msg = ProtoTraderListRes.Parser.ParseFrom(rawMsg.Payload);
+            Console.WriteLine($"\n{DateTime.Now}: Traders list Message Received:\n");
+            foreach(var trader in msg.Trader)
+            {
+                Console.WriteLine($"email: {trader.Email} trader ID: {trader.TraderId}  login: {trader.Login} balance: {trader.Balance}");
+                accountsDictionary.TryAdd(key: trader.TraderId, value:new AccountsLite(traderId: trader.TraderId, login: trader.Login, email: trader.Email, trader.Name, trader.LastName) );
+            }
+            Console.WriteLine();
+        }
     }
     private static void OnHeartbatReceived(IMessage message)
     {
         Console.WriteLine($"\n{DateTime.Now}: Heartbeat Message Received:\n{message}");
         Console.WriteLine();
+    }
+    private static void OnLoginReceived(IMessage message)
+    {
+        Console.WriteLine("Login response...");
+        var rawMsg = (ProtoMessage)message;
+        var _msg = ProtoManagerAuthRes.Parser.ParseFrom(rawMsg.Payload);
+        Console.WriteLine("Message : " + _msg);
+        
+        
+        _cclient.RequestTraderEntities();  
+        _cclient.RequestSymbols();
+
+    }
+    private static void OnExecutionMessageReceived(IMessage message)
+    {
+        //_cclient.RequestTraderEntities();
+        var rawMsg = (ProtoMessage)message;
+        if (message.GetPayloadType() == (uint)ProtoCSPayloadType.ProtoExecutionEvent)
+        {
+            Console.WriteLine("Trade Execution Event...");
+            var _msg = ProtoExecutionEvent.Parser.ParseFrom(rawMsg.Payload);
+            Console.WriteLine("Reply : " + _msg);
+            if (_msg.ExecutionType == ProtoExecutionType.OrderFilled)
+            {
+
+            }
+
+            var dto = new DealsDTO();
+            AccountsLite account ;
+            string _symbol;
+            bool isLogin = accountsDictionary.TryGetValue(_msg.Position.TradeData.TraderId,out account);
+            bool isSymbol = symbolsDictionary.TryGetValue(_msg.Position.TradeData.SymbolId,out _symbol);
+            dto.platform = "CTRADER";
+            string dealId = _msg?.Deal?.DealId.ToString() ?? _msg?.Position?.PositionId.ToString() ?? "0";
+            dto.dealId = int.Parse(dealId);
+            dto.positionId = (int)_msg?.Position?.PositionId;
+            dto.login = isLogin 
+                               ? (int)account.Login
+                               : (int)_msg?.Order.Login;
+
+            dto.traderId = (int)_msg?.Position?.TradeData?.TraderId;
+            if (_msg.Position?.TradeData?.TradeSide == ProtoTradeSide.Buy)
+                dto.action = "0";
+            else if (_msg.Position?.TradeData?.TradeSide == ProtoTradeSide.Sell)
+                dto.action = "1";
+            if (_msg.Position?.PositionStatus == ProtoPositionStatus.PositionStatusOpen)
+                dto.entry = "0";
+            else if (_msg.Position?.PositionStatus == ProtoPositionStatus.PositionStatusClosed)
+                dto.entry = "1";
+            dto.time = _msg.Position?.UtcLastUpdateTimestamp.ToString() ?? "";
+            dto.symbol = isSymbol ?
+                            _symbol            
+                            :_msg.Position?.TradeData?.SymbolId.ToString() ?? "";
+            dto.volume = (int)_msg.Position?.TradeData?.Volume;
+            dto.rateProfit = "0";
+            dto.rateMargin = _msg.Position?.MarginRate.ToString() ?? "";
+            dto.comment = _msg.Position?.TradeData?.Comment ?? "";
+            dto.profit = 0;
+            dto.volumeClosed = 0;
+            dto.contractSize = 0;
+            dto.price = (double)_msg.Position?.Price;
+            dto.priceSL = _msg.Position.StopLoss;
+            dto.priceTP = _msg.Position.TakeProfit;
+
+            bool isOpen = (_msg.Position.PositionStatus == ProtoPositionStatus.PositionStatusOpen
+                        && _msg.Position.PositionStatus != ProtoPositionStatus.PositionStatusError
+                );
+
+            PublishRabbitMq(dto, isOpen);
+        }
+
     }
     private static void OnException(Exception ex)
     {
@@ -402,42 +574,38 @@ class Program
         Console.WriteLine("Disposed");
         //if (IsDisposed) throw new ObjectDisposedException(GetType().FullName);
     }
-    /// <summary>
-    /// This method will keep reading the messages channel and then it will send the read message
-    /// </summary>
-    /// <param name="cancellationToken">The cancellation token that will cancel the reading</param>
-    /// <returns>Task</returns>
-   /* private async Task StartSendingMessages(CancellationToken cancellationToken)
+    private static void PublishRabbitMq(object dto, bool isOpen)
     {
-        try
-        {
-            while (await _messagesChannel.Reader.WaitToReadAsync(cancellationToken) && IsDisposed is false && IsTerminated is false)
-            {
-                while (_messagesChannel.Reader.TryRead(out var message))
-                {
-                    var timeElapsedSinceLastMessageSent = DateTimeOffset.Now - LastSentMessageTime;
-
-                    if (timeElapsedSinceLastMessageSent < _requestDelay)
-                    {
-                        await Task.Delay(_requestDelay - timeElapsedSinceLastMessageSent);
-                    }
-
-                    if (IsDisposed is false)
-                    {
-                        await SendMessageInstant(message);
-                    }
-
-                    if (MessagesQueueCount > 0) MessagesQueueCount -= 1;
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        catch (Exception ex)
-        {
-            //OnError(ex);
-        }
-    }*/
+        var jsonMessage = dto;
+        string exchangeName = "ctrader-sandbox-exchange";
+        var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(jsonMessage));
+        string routingKey = string.Empty;
+        routingKey = isOpen ? "open-deal"
+                            : "close-deal";
+        string queueName = isOpen ? "ctrader-newone-open-deals-queue"
+                                  : "ctrader-newone-close-deals-queue";
+        string queueNameII = "ctrader-newone-deals-queue";
+       
+        channel.QueueDeclare(queueName, false, false, false, null);
+        channel.QueueBind(queue: queueName,
+        exchange: exchangeName,
+        routingKey: routingKey);
+        channel.BasicPublish(exchangeName, routingKey, null, body);
+        channel.BasicPublish(exchangeName, routingKey, null, body);
+    }
+    private static void PublishRabbitMqDeals(object dto)
+    {
+        var jsonMessage = dto;
+        string exchangeName = "ctrader-sandbox-exchange";
+        var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(jsonMessage));
+        string routingKey = string.Empty;
+        string queueName =  "ctrader-newone-deals-queue";
+       
+        channel.QueueDeclare(queueName, false, false, false, null);
+        channel.QueueBind(queue: queueName,
+        exchange: exchangeName,
+        routingKey: routingKey);
+        channel.BasicPublish(exchangeName, routingKey, null, body);
+    }
 
 }

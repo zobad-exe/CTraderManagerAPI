@@ -15,6 +15,7 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using CTraderManagerAPI.proto;
 
 namespace CTraderManagerAPI
 {
@@ -123,7 +124,7 @@ namespace CTraderManagerAPI
             try
             {
                await ConnectTcp();
-                _ = StartSendingMessages(_cancellationTokenSource.Token).ConfigureAwait(false);
+                _ = StartSendingMessages(_cancellationTokenSource.Token)/*.ConfigureAwait(false)*/;
 
                 _heartbeatDisposable = Observable.Interval(_heartbeatInerval).DoWhile(() => !IsDisposed)
                     .Subscribe(x => SendHeartbeat());
@@ -235,7 +236,7 @@ namespace CTraderManagerAPI
             catch (Exception ex)
             {
                 var exception = new SendException(ex);
-
+                Console.Write(exception.ToString());    
                 throw exception;
             }
         }
@@ -362,10 +363,39 @@ namespace CTraderManagerAPI
                     }
                     while (readBytes < length);
                     var message = ProtoMessage.Parser.ParseFrom(data, 0, length);
-                    //Console.WriteLine(message.PayloadType);
+                    Console.WriteLine(message);
                     if (message.PayloadType == (uint)50) {
                         var errMessage = ProtoErrorRes.Parser.ParseFrom(data, 0, length);
                         Console.WriteLine(errMessage);
+                    }
+                    if(message.PayloadType == (uint)ProtoCSPayloadType.ProtoManagerAuthRes)
+                    {
+                        Console.WriteLine("Login...");
+                        var authResp = ProtoManagerAuthRes.Parser.ParseFrom(data);
+                        var resp = authResp.ToString();
+                        Console.WriteLine("response: "+resp);
+                    }
+                    if(message.PayloadType == (uint)ProtoCSPayloadType.ProtoTraderLogoutEvent)
+                    {
+                        Console.WriteLine("Logout...");
+                        var _msg = ProtoTraderLogoutEvent.Parser.ParseFrom(message.Payload);
+                        var msg = _msg.ToString();
+                        Console.WriteLine("Reply : "+msg);
+                    }
+                    /*if(message.PayloadType == (uint)ProtoCSPayloadType.ProtoExecutionEvent)
+                    {
+                        Console.WriteLine("Trade Execution Event...");
+                        var _msg = ProtoExecutionEvent.Parser.ParseFrom(message.Payload);
+                        var msg = _msg.ToString();
+                        Console.WriteLine("Reply : "+_msg);
+                    }*/
+                    if(message.PayloadType == (uint)ProtoCSPayloadType.ProtoTraderLogonEvent)
+                    {
+                        Console.WriteLine("Login Event...");
+                        var _msg = ProtoTraderLogonEvent.Parser.ParseFrom(message.Payload);
+                        var msg = _msg.ToString();
+
+                        Console.WriteLine("Reply : "+_msg);
                     }
                     ArrayPool<byte>.Shared.Return(data);
 
@@ -374,7 +404,7 @@ namespace CTraderManagerAPI
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+               // Console.WriteLine(ex.ToString());
                 if (data is not null) ArrayPool<byte>.Shared.Return(data);
 
                 var exception = new ReceiveException(ex);
@@ -419,8 +449,8 @@ namespace CTraderManagerAPI
         /// </summary>
         private async void SendHeartbeat()
         {
-            Console.WriteLine(DateTime.Now + " : Sending heartbeat");
             if (IsDisposed || DateTimeOffset.Now - LastSentMessageTime < _heartbeatInerval) return;
+            Console.WriteLine(DateTime.Now + " : Sending heartbeat");
             try
             {
                 await SendMessage(_heartbeatEvent, ProtoPayloadType.HeartbeatEvent).ConfigureAwait(false);
@@ -431,6 +461,36 @@ namespace CTraderManagerAPI
             }
         }
 
+        public async void RequestTraderEntities()
+        {
+            if (IsDisposed) return;
+            Console.WriteLine("Requesting for traders info...");
+            try
+            {
+                var request = new ProtoTraderListReq();
+                DateTime date1 = new DateTime(2010, 1, 1, 0, 30, 45, 125);
+                request.FromTimestamp = ((DateTimeOffset)date1).ToUnixTimeMilliseconds(); ;
+
+                DateTime today = DateTime.UtcNow;                
+                request.ToTimestamp = ((DateTimeOffset)today).ToUnixTimeMilliseconds();
+
+                await SendMessage(request, request.PayloadType).ConfigureAwait(false);
+
+            }catch(Exception ex) { 
+                OnError(ex);}
+        }
+        public async void RequestSymbols()
+        {
+            if (IsDisposed) return;
+            Console.WriteLine("Requesting for symbols info...");
+            try
+            {
+                var request = new ProtoManagerSymbolListReq();
+                await SendMessage(request, request.PayloadType).ConfigureAwait(false);
+
+            }catch(Exception ex) { 
+                OnError(ex);}
+        }
 
         /// <summary>
         /// Removes the disposed observer from client observers collection

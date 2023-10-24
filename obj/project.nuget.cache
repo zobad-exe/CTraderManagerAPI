@@ -1,15 +1,19 @@
 {
   "version": 2,
-  "dgSpecHash": "kdXv79JOxApHkGWmF2AA5q8YxzmT8PiXj37WOgmMrYVSot6PKNb8+ryrvSJMG7VxfLUclL8YWRGHa85itbZZ5Q==",
+  "dgSpecHash": "kNN9TGzD2SUopXVhnToW+x4JwH9ZXntlWa7cKltTYo/ezcmBdiMjH2Vif4eMb+s3nqhklUIrf0XULuzcS1pcNQ==",
   "success": true,
-  "projectFilePath": "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManagerAPI\\CTraderManagerAPI.csproj",
+  "projectFilePath": "B:\\CTraderManagerAPI-Test\\CTraderManagerAPI\\CTraderManager_API\\CTraderManagerAPI\\CTraderManagerAPI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Z\\.nuget\\packages\\google.protobuf\\3.20.1\\google.protobuf.3.20.1.nupkg.sha512",
     "C:\\Users\\Z\\.nuget\\packages\\grpc.tools\\2.58.0\\grpc.tools.2.58.0.nupkg.sha512",
+    "C:\\Users\\Z\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
     "C:\\Users\\Z\\.nuget\\packages\\protobuf-net\\3.2.26\\protobuf-net.3.2.26.nupkg.sha512",
     "C:\\Users\\Z\\.nuget\\packages\\protobuf-net.core\\3.2.26\\protobuf-net.core.3.2.26.nupkg.sha512",
+    "C:\\Users\\Z\\.nuget\\packages\\rabbitmq.client\\6.6.0\\rabbitmq.client.6.6.0.nupkg.sha512",
     "C:\\Users\\Z\\.nuget\\packages\\system.collections.immutable\\7.0.0\\system.collections.immutable.7.0.0.nupkg.sha512",
-    "C:\\Users\\Z\\.nuget\\packages\\system.reactive\\6.0.0\\system.reactive.6.0.0.nupkg.sha512"
+    "C:\\Users\\Z\\.nuget\\packages\\system.memory\\4.5.5\\system.memory.4.5.5.nupkg.sha512",
+    "C:\\Users\\Z\\.nuget\\packages\\system.reactive\\6.0.0\\system.reactive.6.0.0.nupkg.sha512",
+    "C:\\Users\\Z\\.nuget\\packages\\system.threading.channels\\7.0.0\\system.threading.channels.7.0.0.nupkg.sha512"
   ],
   "logs": []
 }
