@@ -50,7 +50,7 @@ namespace CTraderManagerAPI
         public string rateMargin { get;set; }
         public string comment { get;set; }
         public double profit { get;set; }
-        public int volumeClosed { get;set; }
+        public long volumeClosed { get;set; }
         public double contractSize { get;set; }
         public double price { get;set; }
         public double priceSL { get;set; }

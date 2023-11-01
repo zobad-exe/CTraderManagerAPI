@@ -368,13 +368,13 @@ namespace CTraderManagerAPI
                         var errMessage = ProtoErrorRes.Parser.ParseFrom(data, 0, length);
                         Console.WriteLine(errMessage);
                     }
-                    if(message.PayloadType == (uint)ProtoCSPayloadType.ProtoManagerAuthRes)
+                    /*if(message.PayloadType == (uint)ProtoCSPayloadType.ProtoManagerAuthRes)
                     {
                         Console.WriteLine("Login...");
                         var authResp = ProtoManagerAuthRes.Parser.ParseFrom(data);
                         var resp = authResp.ToString();
                         Console.WriteLine("response: "+resp);
-                    }
+                    }*/
                     if(message.PayloadType == (uint)ProtoCSPayloadType.ProtoTraderLogoutEvent)
                     {
                         Console.WriteLine("Logout...");
